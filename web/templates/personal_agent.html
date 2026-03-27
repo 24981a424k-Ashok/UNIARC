@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal AI News Agent</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=4.8">
+    <style>
+        /* Mobile Menu Toggle in Navbar */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1003;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            .nav-links {
+                display: none !important;
+            }
+            .navbar {
+                padding: 1rem 1rem;
+            }
+            h1 {
+                font-size: 1.8rem !important;
+            }
+            .subtitle {
+                font-size: 1rem !important;
+            }
+            .main-container {
+                padding: 1rem 5% !important;
+            }
+        }
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --border-color: #334155;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 5%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .brand span {
+            color: var(--accent-purple);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--accent-blue);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 5%;
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 3rem 0;
+            background: radial-gradient(circle at top, rgba(139, 92, 246, 0.15), transparent 60%);
+            border-radius: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3rem;
+            margin: 0 0 1rem 0;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .interest-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .interest-pill {
+            padding: 0.8rem 1.5rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .interest-pill:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+        }
+
+        .interest-pill.active {
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .news-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: var(--transition);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .news-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-image-container {
+            height: 180px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .news-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-tag {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--accent-gold);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 1rem 0;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+
+        .card-summary {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            grid-column: 1 / -1;
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(139, 92, 246, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-purple);
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 1rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px dashed var(--border-color);
+            border-radius: 16px;
+            grid-column: 1 / -1;
+            display: block;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .nav-links { display: none; }
+            .interest-pill { padding: 0.6rem 1.2rem; font-size: 0.8rem; }
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            background: var(--bg-hover);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover {
+            background: var(--accent-blue);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .action-btn.bounty-btn:hover {
+            background: var(--accent-gold);
+            color: #000;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <a href="/dashboard" class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-purple);"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            Intelli<span>Node</span>
+        </a>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <div class="nav-links">
+            <a href="/dashboard">Global Intelligence</a>
+            <a href="/student-news">For Students</a>
+            <a href="/personal-agent" class="active">Personal AI Agent</a>
+            <a href="/crystal-ball">Crystal Ball</a>
+        </div>
+        <div id="global-lang-switcher" style="display:flex; align-items:center; gap:0.4rem; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color); backdrop-filter: blur(5px);">
+            <span style="font-size: 0.8rem;">🌐</span>
+            <select id="lang-select" onchange="changeLang(this.value)" style="background:transparent; color:var(--text-primary); border:none; font-size:0.8rem; cursor:pointer; outline:none; font-weight: 700; text-transform: uppercase;">
+                <option value="english" {% if not selected_lang or selected_lang == 'english' %}selected{% endif %}>EN</option>
+                <option value="Telugu" {% if selected_lang == 'Telugu' %}selected{% endif %}>TE</option>
+                <option value="Hindi" {% if selected_lang == 'Hindi' %}selected{% endif %}>HI</option>
+                <option value="Spanish" {% if selected_lang == 'Spanish' %}selected{% endif %}>ES</option>
+                <option value="Arabic" {% if selected_lang == 'Arabic' %}selected{% endif %}>AR</option>
+                <option value="Japanese" {% if selected_lang == 'Japanese' %}selected{% endif %}>JP</option>
+                <option value="French" {% if selected_lang == 'French' %}selected{% endif %}>FR</option>
+            </select>
+        </div>
+    </nav>
+    <script>
+        function changeLang(val) {
+            const url = new URL(window.location.href);
+            if (val && val !== 'english') url.searchParams.set('lang', val);
+            else url.searchParams.delete('lang');
+            window.location.href = url.toString();
+        }
+    </script>
+
+    <div class="main-container">
+        <div class="header-section">
+            <div style="display:flex; flex-direction:column; align-items:center; gap:1.5rem; margin-bottom:1rem;">
+                <h1 style="margin-bottom:0; display: flex; align-items: center; gap: 1rem;">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent-purple);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Personal AI News Agent
+                </h1>
+                <div id="search-container" style="width:100%; display:flex; justify-content:center;">
+                    <div style="position:relative; width:90%; max-width:600px;">
+                        <span style="position:absolute; left:1.2rem; top:50%; transform:translateY(-50%); color:var(--text-secondary);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        </span>
+                        <input type="text" id="news-search" placeholder="Search topics (e.g. OpenAI, Bitcoin, EV Market)..." 
+                               style="width:100%; background:var(--bg-dark); border:2px solid var(--accent-purple); color:white; padding:1.2rem 1.2rem 1.2rem 3.5rem; border-radius:40px; font-size:1.1rem; box-shadow:0 10px 25px rgba(0,0,0,0.3); transition:var(--transition);">
+                    </div>
+                </div>
+            </div>
+            <p class="subtitle">Select your topics of interest below or search to generate a hyper-personalized, continuously updated intelligence feed driven by AI.</p>
+        </div>
+
+        <div class="interest-selector" id="interest-selector">
+            {% for interest in available_interests %}
+            <div class="interest-pill" data-interest="{{ interest }}" onclick="toggleInterest(this)">{{ interest }}</div>
+            {% endfor %}
+        </div>
+
+        <div class="news-grid" id="news-grid">
+            <!-- News cards will be dynamically injected here -->
+        </div>
+
+        <div class="loading-state" id="loading-state">
+            <div class="spinner"></div>
+            <p>Your AI Agent is curating the latest intelligence...</p>
+        </div>
+
+        <div class="empty-state" id="empty-state">
+            <h3>No interests selected</h3>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Please select at least one topic above to activate your personal AI feed.</p>
+        </div>
+    </div>
+
+    <script>
+        const selectedInterests = new Set();
+        const newsGrid = document.getElementById('news-grid');
+        const loadingState = document.getElementById('loading-state');
+        const emptyState = document.getElementById('empty-state');
+        const searchInput = document.getElementById('news-search');
+        
+        let currentPage = 1;
+        let isBatchLoading = false;
+        let hasMore = true;
+        let observer = null;
+
+
+        searchInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                resetAndFetch();
+            }
+        });
+
+        function resetAndFetch() {
+            newsGrid.innerHTML = '';
+            currentPage = 1;
+            hasMore = true;
+            fetchPersonalNews();
+        }
+
+        function toggleInterest(el) {
+            const interest = el.dataset.interest;
+            if (selectedInterests.has(interest)) {
+                selectedInterests.delete(interest);
+                el.classList.remove('active');
+            } else {
+                selectedInterests.add(interest);
+                el.classList.add('active');
+            }
+            resetAndFetch();
+        }
+
+        async function fetchPersonalNews() {
+            const query = searchInput.value.trim();
+            if (selectedInterests.size === 0 && !query) {
+                newsGrid.innerHTML = '';
+                emptyState.style.display = 'block';
+                loadingState.style.display = 'none';
+                return;
+            }
+
+            if (isBatchLoading || !hasMore) return;
+
+            emptyState.style.display = 'none';
+            loadingState.style.display = 'block';
+            isBatchLoading = true;
+
+            const interestsArray = Array.from(selectedInterests);
+            const interestsParam = interestsArray.join(',');
+            
+            try {
+                const lang = document.getElementById('lang-select').value;
+                const url = `/api/get-personal-news?q=${encodeURIComponent(query)}&interests=${encodeURIComponent(interestsParam)}&lang=${lang}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                loadingState.style.display = 'none';
+                isBatchLoading = false;
+
+                if (data.status === 'success' && data.articles.length > 0) {
+                    renderArticles(data.articles);
+                    hasMore = data.has_more;
+                    currentPage++;
+                    setupInfiniteScroll();
+                } else if (!newsGrid.children.length) {
+                    newsGrid.innerHTML = `
+                        <div class="empty-state" style="display:block; width:100%; grid-column:1/-1;">
+                            <h3>No Intelligence Found</h3>
+                            <p style="color: var(--text-secondary); margin-top: 0.5rem;">We couldn't find matching reports in the active nodes. Try broad terms.</p>
+                        </div>
+                    `;
+                    hasMore = false;
+                }
+            } catch (error) {
+                console.error("Failed to fetch news:", error);
+                loadingState.style.display = 'none';
+                isBatchLoading = false;
+            }
+        }
+
+        function renderArticles(articles) {
+            articles.forEach(article => {
+                const card = document.createElement('div');
+                card.className = 'news-card fade-in';
+                card.innerHTML = `
+                    <div class="card-image-container" onclick="window.open('${article.url}', '_blank')">
+                        <div class="card-tag">${article.matched_interest || 'Intelligence'}</div>
+                        <img src="${article.image_url}" alt="Cover" class="card-image" onerror="this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000'">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title" onclick="window.open('${article.url}', '_blank')">${article.title}</h3>
+                        <p class="card-summary">${article.summary}</p>
+                        <div class="card-footer">
+                            <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                                <span style="font-weight:700; color:var(--text-primary);">${article.source_name || 'Intelligence Node'}</span>
+                                <span>${getTimeAgo(article.published_at)}</span>
+                            </div>
+                            <div class="card-actions">
+                                <button class="action-btn chat-btn" data-id="${article.id}" data-title="${(article.title || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;')}" onclick="handleMiniChat(this)" title="Chat with News">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                                </button>
+                                <button class="action-btn bounty-btn" onclick="reportBounty('${article.id}')" title="Fact-Check Bounty">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                newsGrid.appendChild(card);
+            });
+        }
+
+        function handleMiniChat(btn) {
+            const id = btn.dataset.id;
+            const title = btn.dataset.title;
+            openMiniChat(id, title);
+        }
+
+        async function openMiniChat(articleId, title) {
+            const query = prompt(`Chat with AI about: "${title}"\nWhat would you like to know?`);
+            if (!query) return;
+
+            try {
+                const response = await fetch('/api/chat-article', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ article_id: articleId, query: query })
+                });
+                const data = await response.json();
+                alert(`AI Response:\n\n${data.response}`);
+            } catch (error) {
+                console.error("Chat failed:", error);
+                alert("Communication with AI Node failed.");
+            }
+        }
+
+        async function reportBounty(articleId) {
+            if (!confirm("Report this article as potentially fake for verification bounty?")) return;
+            
+            try {
+                const response = await fetch('/api/flag-article', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ news_id: parseInt(articleId), reason: "Personal Agent Report" })
+                });
+                const data = await response.json();
+                alert(data.message || "Report submitted for verification.");
+            } catch (error) {
+                console.error("Bounty report failed:", error);
+                alert("Network error. Could not submit report.");
+            }
+        }
+
+        function getTimeAgo(dateStr) {
+            if (!dateStr) return 'Recent';
+            const past = new Date(dateStr);
+            const now = new Date();
+            const diffInMs = now - past;
+            const diffInMins = Math.floor(diffInMs / (1000 * 60));
+            
+            if (diffInMins < 60) return `${diffInMins} min ago`;
+            const diffInHours = Math.floor(diffInMins / 60);
+            if (diffInHours < 24) return `${diffInHours} hours ago`;
+            return past.toLocaleDateString();
+        }
+
+        function setupInfiniteScroll() {
+            if (observer) observer.disconnect();
+            
+            observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && hasMore && !isBatchLoading) {
+                    fetchPersonalNews();
+                }
+            }, { threshold: 0.1, rootMargin: '200px' });
+
+            if (newsGrid.lastElementChild) {
+                observer.observe(newsGrid.lastElementChild);
+            }
+        }
+
+        // Auto-refresh every 15 minutes
+        setInterval(() => {
+            if (selectedInterests.size > 0 && currentPage === 1) {
+                resetAndFetch();
+            }
+        }, 900000);
+    </script>
+    <!-- Mobile Navigation Overlay -->
+    <div class="nav-mask" id="nav-mask" onclick="toggleMobileMenu()"></div>
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay">
+        <div class="mobile-nav-close" onclick="toggleMobileMenu()">×</div>
+        <a href="/dashboard" class="mobile-nav-link">🏠 Home</a>
+        <a href="/saved" class="mobile-nav-link">🔖 Saved</a>
+        <a href="/universe" class="mobile-nav-link">🌌 Universe</a>
+        <a href="/student-news" class="mobile-nav-link" style="color: var(--accent-blue);">🎓 For Students</a>
+        <a href="/personal-agent" class="mobile-nav-link" style="color: var(--accent-purple);">🤖 Personal AI</a>
+        <a href="/crystal-ball" class="mobile-nav-link" style="color: var(--accent-cyan);">🔮 Crystal Ball</a>
+        <hr style="border: none; border-top: 1px solid var(--border-color); width: 100%;">
+        <a href="/history" class="mobile-nav-link">📖 History</a>
+    </div>
+
+    <script>
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobile-nav-overlay');
+            const mask = document.getElementById('nav-mask');
+            overlay.classList.toggle('active');
+            mask.classList.toggle('active');
+            
+            if (overlay.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+    </script>
+</body>
+</html>

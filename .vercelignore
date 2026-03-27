@@ -1,0 +1,30 @@
+# Ignored Directories
+.venv/
+.venv
+venv/
+venv
+env/
+env
+.git/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Database & Data
+ai_news_agent.db
+data/
+logs/
+*.log
+*.txt
+
+# Ignore specific test or debug scripts
+test_*.py
+debug_*.py
+audit_*.py
+check_*.py
+verify_*.py
+inspect_*.py
+
+# Documentation
+*.md

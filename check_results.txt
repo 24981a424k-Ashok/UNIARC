@@ -1,0 +1,12 @@
+
+Checking database: c:/Users/CH ASHOK REDDY/OneDrive/Desktop/VibeCoding/ai-news-agent/data/news.db
+Table 'breaking_news' does not exist.
+
+Checking database: c:/Users/CH ASHOK REDDY/OneDrive/Desktop/VibeCoding/ai-news-agent/src/data/news.db
+File not found.
+
+Checking database: c:/Users/CH ASHOK REDDY/OneDrive/Desktop/VibeCoding/ai-news-agent/news.db
+File not found.
+
+Checking database: ./news.db
+File not found.

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Analyst Report - Business Intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=4.8">
+    <link rel="stylesheet" href="/static/breaking_news.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border-radius: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0 0 0.5rem 0;
+            color: white;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 1.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-bottom: 2rem;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateX(-4px);
+        }
+
+        .intel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .intel-card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 1.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(59, 130, 246, 0.3);
+            border-color: #3b82f6;
+        }
+
+        .intel-card-image {
+            width: 100%;
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            border-radius: 12px;
+            margin-bottom: 1.2rem;
+        }
+
+        .intel-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .intel-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #e2e8f0;
+            line-height: 1.4;
+            margin: 0;
+            flex: 1;
+        }
+
+        .confidence-badge {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            white-space: nowrap;
+            margin-left: 1rem;
+        }
+
+        .confidence-badge.medium {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .confidence-badge.low {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .intel-section {
+            margin-bottom: 1.2rem;
+        }
+
+        .intel-section h4 {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin: 0 0 0.5rem 0;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .intel-section p,
+        .intel-section ul {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .intel-section ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .intel-section li {
+            padding-left: 1.2rem;
+            position: relative;
+            margin-bottom: 0.4rem;
+        }
+
+        .intel-section li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .intel-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .intel-tag {
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .intel-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .source-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .source-link:hover {
+            color: #93c5fd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: #1e293b;
+            border-radius: 16px;
+            margin: 2rem 0;
+        }
+
+        .empty-state h2 {
+            color: #e2e8f0;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: #94a3b8;
+        }
+
+        @media (max-width: 768px) {
+            .intel-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/dashboard" class="back-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+        </a>
+
+        <div class="header">
+            <h1>📊 Senior Analyst Report</h1>
+            <p>Premium Business Intelligence • Top 30 Trending Business News</p>
+        </div>
+
+        {% if visual_intel %}
+        <div class="visual-intel-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+            <div class="chart-container" style="background: rgba(30,41,59,0.7); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: #fbbf24; margin-top: 0; margin-bottom: 1rem;">🔥 Trending Vectors</h3>
+                <canvas id="trendingChart"></canvas>
+            </div>
+            <div class="chart-container" style="background: rgba(30,41,59,0.7); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: #8b5cf6; margin-top: 0; margin-bottom: 1rem;">🌍 Geopolitical Risk Index</h3>
+                <canvas id="geoChart"></canvas>
+            </div>
+            <div class="chart-container" style="background: rgba(30,41,59,0.7); padding: 1.5rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);">
+                <h3 style="color: #3b82f6; margin-top: 0; margin-bottom: 1rem;">📈 Economic Signals</h3>
+                <canvas id="economicChart"></canvas>
+            </div>
+        </div>
+        
+        <script>
+            // Parse Jinja JSON safely to avoid IDE linter errors
+            const rawData = '{{ visual_intel | tojson | safe }}';
+            const chartData = JSON.parse(rawData);
+            
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+
+            new Chart(document.getElementById('trendingChart'), {
+                type: 'bar',
+                data: {
+                    labels: chartData.trending.labels,
+                    datasets: [{
+                        label: 'Trend Volume',
+                        data: chartData.trending.data,
+                        backgroundColor: 'rgba(251, 191, 36, 0.6)',
+                        borderColor: 'rgba(251, 191, 36, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            new Chart(document.getElementById('geoChart'), {
+                type: 'line',
+                data: {
+                    labels: chartData.geopolitical.labels,
+                    datasets: [{
+                        label: 'Risk Index',
+                        data: chartData.geopolitical.data,
+                        borderColor: 'rgba(139, 92, 246, 1)',
+                        backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: { responsive: true, scales: { y: { beginAtZero: true } } }
+            });
+
+            new Chart(document.getElementById('economicChart'), {
+                type: 'polarArea',
+                data: {
+                    labels: chartData.economic.labels,
+                    datasets: [{
+                        label: 'Signal Strength',
+                        data: chartData.economic.data,
+                        backgroundColor: ['rgba(59, 130, 246, 0.6)', 'rgba(16, 185, 129, 0.6)', 'rgba(245, 158, 11, 0.6)', 'rgba(239, 68, 68, 0.6)', 'rgba(139, 92, 246, 0.6)', 'rgba(236, 72, 153, 0.6)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: { responsive: true, scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { backdropColor: 'transparent' } } } }
+            });
+        </script>
+        {% endif %}
+
+        {% if premium_intel and premium_intel|length > 0 %}
+        <div class="intel-grid">
+            {% for item in premium_intel %}
+            <div class="intel-card" data-url="{{ item.url or '#' }}">
+                {% if item.image_url %}
+                <div class="intel-card-image" style="background-image: url('{{ item.image_url }}');"></div>
+                {% endif %}
+
+                <div class="intel-card-header">
+                    <h3 class="intel-title">{{ item.title }}</h3>
+                    <span
+                        class="confidence-badge {% if item.confidence_level == 'Medium' %}medium{% elif item.confidence_level == 'Low' %}low{% endif %}">
+                        {{ item.confidence_level }} Confidence
+                    </span>
+                </div>
+
+                {% if item.policy_changes %}
+                <div class="intel-section">
+                    <h4>📋 Policy Changes</h4>
+                    <ul>
+                        {% for change in item.policy_changes %}
+                        <li>{{ change }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if item.market_impact %}
+                <div class="intel-section">
+                    <h4>📈 Market Impact</h4>
+                    <p>{{ item.market_impact }}</p>
+                </div>
+                {% endif %}
+
+                {% if item.competitor_analysis %}
+                <div class="intel-section">
+                    <h4>🎯 Competitor Analysis</h4>
+                    <p>{{ item.competitor_analysis }}</p>
+                </div>
+                {% endif %}
+
+                {% if item.strategic_signals %}
+                <div class="intel-section">
+                    <h4>🔮 Strategic Signals</h4>
+                    <ul>
+                        {% for signal in item.strategic_signals %}
+                        <li>{{ signal }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if item.recommendations %}
+                <div class="intel-section">
+                    <h4>💡 Recommendations</h4>
+                    <ul>
+                        {% for rec in item.recommendations %}
+                        <li>{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if item.affected_sectors %}
+                <div class="intel-tags">
+                    {% for sector in item.affected_sectors %}
+                    <span class="intel-tag">{{ sector }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="intel-footer">
+                    <span style="font-size: 0.85rem; color: #94a3b8;">
+                        📰 {{ item.source_name or 'Premium Source' }}
+                    </span>
+                    <a href="{{ item.url }}" class="source-link" onclick="event.stopPropagation()">
+                        Read Full Article
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h2>No Business Intelligence Available</h2>
+            <p>Premium business analysis will appear here once data is collected and analyzed.</p>
+        </div>
+        {% endif %}
+    </div>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = '/';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.intel-card');
+            cards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    // Prevent navigation if clicking the source link
+                    if (e.target.closest('.source-link')) return;
+
+                    const url = card.dataset.url;
+                    if (url && url !== '#') {
+                        window.open(url, '_blank');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

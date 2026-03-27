@@ -1,0 +1,262 @@
+[
+    {
+        "type": "MCQ",
+        "section": "National Affairs",
+        "question": "Which Indian city is known as the 'Silicon Valley of India'?",
+        "options": [
+            "Hyderabad",
+            "Mumbai",
+            "Bengaluru",
+            "Pune"
+        ],
+        "correct_answer": "Bengaluru",
+        "explanation": "Bengaluru is called the Silicon Valley of India because of its role as the nation's leading information technology (IT) exporter."
+    },
+    {
+        "type": "MCQ",
+        "section": "International Affairs",
+        "question": "Which organization releases the 'World Economic Outlook'?",
+        "options": [
+            "IMF",
+            "World Bank",
+            "WEF",
+            "ADB"
+        ],
+        "correct_answer": "IMF",
+        "explanation": "The International Monetary Fund (IMF) publishes the World Economic Outlook report twice a year."
+    },
+    {
+        "type": "MCQ",
+        "section": "Economy",
+        "question": "What is the primary objective of the PM-KUSUM scheme?",
+        "options": [
+            "Energy security for farmers",
+            "Rural housing",
+            "Direct benefit transfer",
+            "Women empowerment"
+        ],
+        "correct_answer": "Energy security for farmers",
+        "explanation": "Pradhan Mantri Kisan Urja Suraksha evam Utthaan Mahabhiyan (PM-KUSUM) aims to provide energy security to farmers by installing solar pumps."
+    },
+    {
+        "type": "MCQ",
+        "section": "Science",
+        "question": "Which mission by NASA recently collected samples from the asteroid Bennu?",
+        "options": [
+            "Artemis",
+            "OSIRIS-REx",
+            "Juno",
+            "Dragonfly"
+        ],
+        "correct_answer": "OSIRIS-REx",
+        "explanation": "OSIRIS-REx is the first U.S. mission to collect a sample from an asteroid (Bennu) and return it to Earth."
+    },
+    {
+        "type": "MCQ",
+        "section": "Sports",
+        "question": "Who won the ICC Men's Cricket World Cup 2023?",
+        "options": [
+            "India",
+            "Australia",
+            "South Africa",
+            "England"
+        ],
+        "correct_answer": "Australia",
+        "explanation": "Australia defeated India in the final to win their sixth ICC Men's Cricket World Cup title."
+    },
+    {
+        "type": "Statement-based",
+        "section": "National Affairs",
+        "question": "Consider the following statements regarding G20:\n1. India held the G20 presidency in 2023.\n2. The theme was 'Vasudhaiva Kutumbakum'.\nWhich of the following is correct?",
+        "options": [
+            "Only 1",
+            "Only 2",
+            "Both 1 and 2",
+            "Neither 1 nor 2"
+        ],
+        "correct_answer": "Both 1 and 2",
+        "explanation": "India hosted the G20 summit in New Delhi in 2023 with the theme 'One Earth, One Family, One Future'."
+    },
+    {
+        "type": "MCQ",
+        "section": "International Affairs",
+        "question": "Which country recently joined NATO as its 31st member?",
+        "options": [
+            "Sweden",
+            "Finland",
+            "Ukraine",
+            "Iceland"
+        ],
+        "correct_answer": "Finland",
+        "explanation": "Finland officially became a member of NATO on April 4, 2023."
+    },
+    {
+        "type": "MCQ",
+        "section": "Economy",
+        "question": "The 'Angel Tax' is associated with which of the following?",
+        "options": [
+            "Inbound Remittances",
+            "Unlisted companies / Startups",
+            "Agriculture Export",
+            "Gold Imports"
+        ],
+        "correct_answer": "Unlisted companies / Startups",
+        "explanation": "Angel tax is an income tax at the rate of 30% that is levied when an unlisted company issues shares to an investor at a price higher than its fair market value."
+    },
+    {
+        "type": "MCQ",
+        "section": "Science",
+        "question": "India's first solar mission is named:",
+        "options": [
+            "Aditya-L1",
+            "Solar-I",
+            "Bhashkara-S",
+            "Surya-K"
+        ],
+        "correct_answer": "Aditya-L1",
+        "explanation": "Aditya-L1 is the first Indian observatory class mission to study the Sun."
+    },
+    {
+        "type": "Sports",
+        "section": "Sports",
+        "question": "The term 'Bazball' is frequently used in which sport?",
+        "options": [
+            "Basketball",
+            "Cricket",
+            "Baseball",
+            "Hockey"
+        ],
+        "correct_answer": "Cricket",
+        "explanation": "Bazball refers to a bold and aggressive brand of Test cricket played by the England men's team under coach Brendon McCullum (Baz)."
+    },
+    {
+        "type": "MCQ",
+        "section": "National Affairs",
+        "question": "What is the name of India's indigenous payment gateway?",
+        "options": [
+            "UPI",
+            "RuPay",
+            "IMPS",
+            "Aadhar Pay"
+        ],
+        "correct_answer": "RuPay",
+        "explanation": "RuPay is an Indian multinational financial services and payment service system, conceived and launched by the National Payments Corporation of India (NPCI)."
+    },
+    {
+        "type": "MCQ",
+        "section": "Economy",
+        "question": "Which body regulates the Stock Market in India?",
+        "options": [
+            "RBI",
+            "SEBI",
+            "IRDAI",
+            "PFRDA"
+        ],
+        "correct_answer": "SEBI",
+        "explanation": "The Securities and Exchange Board of India (SEBI) is the regulatory body for securities and commodity market in India."
+    },
+    {
+        "type": "MCQ",
+        "section": "Science",
+        "question": "What is 'Gaganyaan' related to?",
+        "options": [
+            "Underwater exploration",
+            "Human Space Flight",
+            "Deep forest mapping",
+            "Satellite launch vehicle"
+        ],
+        "correct_answer": "Human Space Flight",
+        "explanation": "Gaganyaan is an Indian crewed orbital spacecraft intended to be the foundational spacecraft of the Indian Human Spaceflight Programme."
+    },
+    {
+        "type": "MCQ",
+        "section": "International Affairs",
+        "question": "Which canal connects the Mediterranean Sea to the Red Sea?",
+        "options": [
+            "Panama Canal",
+            "Suez Canal",
+            "Kiel Canal",
+            "Corinth Canal"
+        ],
+        "correct_answer": "Suez Canal",
+        "explanation": "The Suez Canal is an artificial sea-level waterway in Egypt, connecting the Mediterranean Sea to the Red Sea."
+    },
+    {
+        "type": "MCQ",
+        "section": "Sports",
+        "question": "The 'Durand Cup' is associated with which sport?",
+        "options": [
+            "Tennis",
+            "Football",
+            "Cricket",
+            "Polo"
+        ],
+        "correct_answer": "Football",
+        "explanation": "The Durand Cup is a football competition in India and is the oldest football tournament in Asia."
+    },
+    {
+        "type": "MCQ",
+        "section": "Economy",
+        "question": "What does 'GST' stand for in the Indian tax system?",
+        "options": [
+            "Global Sales Tax",
+            "General Service Tax",
+            "Goods and Services Tax",
+            "Government Sales Tax"
+        ],
+        "correct_answer": "Goods and Services Tax",
+        "explanation": "GST is an indirect tax used in India on the supply of goods and services."
+    },
+    {
+        "type": "MCQ",
+        "section": "Science",
+        "question": "Which planet is known as the 'Red Planet'?",
+        "options": [
+            "Venus",
+            "Mars",
+            "Jupiter",
+            "Saturn"
+        ],
+        "correct_answer": "Mars",
+        "explanation": "Mars is often called the 'Red Planet' because iron minerals in the Martian soil oxidize, or rust, causing the soil and atmosphere to look red."
+    },
+    {
+        "type": "MCQ",
+        "section": "National Affairs",
+        "question": "Who is the 'Ex-officio Chairman' of Rajya Sabha?",
+        "options": [
+            "President of India",
+            "Prime Minister of India",
+            "Vice-President of India",
+            "Speaker of Lok Sabha"
+        ],
+        "correct_answer": "Vice-President of India",
+        "explanation": "As per the Constitution of India, the Vice-President of India is the ex-officio Chairman of the Rajya Sabha."
+    },
+    {
+        "type": "Statement-based",
+        "section": "Environment",
+        "question": "Consider the following statements regarding Paris Agreement:\n1. It aims to limit global warming to well below 2, preferably to 1.5 degrees Celsius.\n2. It was adopted at COP21 in 2015.\nWhich is correct?",
+        "options": [
+            "Only 1",
+            "Only 2",
+            "Both 1 and 2",
+            "Neither 1 nor 2"
+        ],
+        "correct_answer": "Both 1 and 2",
+        "explanation": "The Paris Agreement is a legally binding international treaty on climate change adopted at COP21 in Paris in 2015."
+    },
+    {
+        "type": "MCQ",
+        "section": "International Affairs",
+        "question": "Where is the headquarters of the 'European Union' located?",
+        "options": [
+            "Paris, France",
+            "Berlin, Germany",
+            "Brussels, Belgium",
+            "Geneva, Switzerland"
+        ],
+        "correct_answer": "Brussels, Belgium",
+        "explanation": "Brussels is the administrative center of the European Union, hosting several principal EU institutions."
+    }
+]

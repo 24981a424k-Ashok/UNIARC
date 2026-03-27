@@ -1,0 +1,3 @@
+Engine URL: sqlite:///c:/Users/CH ASHOK REDDY/OneDrive/Desktop/VibeCoding/ai-news-agent/data/news.db
+Absolute Path of Engine URL: c:\Users\CH ASHOK REDDY\OneDrive\Desktop\VibeCoding\ai-news-agent\data\news.db
+CWD: C:\Users\CH ASHOK REDDY\OneDrive\Desktop\VibeCoding\ai-news-agent

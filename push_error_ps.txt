@@ -1,0 +1,47 @@
+﻿git : Pushing to https://huggingface
+.co/spaces/ashok12346789098765432/Ml
+-Innovator2
+At line:1 char:19
++ ... news-agent; git push hf-final 
+hf-deployment-code:main --force 
+--verbo ...
++                 ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : NotSp 
+   ecified: (Pushing to http...2/M  
+  l-Innovator2:String) [], Remote   
+ Exception
+    + FullyQualifiedErrorId : Nativ 
+   eCommandError
+ 
+POST git-receive-pack (55710 bytes)
+remote: [31m-----------------------
+------------------------------------
+--------------[0m        
+remote: [31mYour push was rejected 
+because it contains binary 
+files.[0m        
+remote: [31mPlease use 
+https://huggingface.co/docs/hub/xet 
+to store binary files.[0m        
+remote: [31mSee also: https://huggi
+ngface.co/docs/hub/xet/using-xet-sto
+rage#git[0m        
+remote: [31m[0m        
+remote: [31mOffending files:[0m   
+     
+remote: [31m  - src/delivery/web_da
+shboard_translation_backup.py (ref: 
+refs/heads/main)[0m        
+remote: [31m-----------------------
+------------------------------------
+--------------[0m        
+To https://huggingface.co/spaces/ash
+ok12346789098765432/Ml-Innovator2
+ ! [remote rejected]   
+hf-deployment-code -> main 
+(pre-receive hook declined)
+error: failed to push some refs to '
+https://huggingface.co/spaces/ashok1
+2346789098765432/Ml-Innovator2'

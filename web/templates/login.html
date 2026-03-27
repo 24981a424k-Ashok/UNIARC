@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | Universal News Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: #000;
+            color: white;
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .split-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Left Side: Auth Form */
+        .auth-side {
+            width: 40%;
+            background: #020617;
+            padding: 4rem 6rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            z-index: 10;
+            box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-side h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-side p {
+            color: #94a3b8;
+            margin-bottom: 3rem;
+            font-size: 1rem;
+        }
+
+        .auth-side p a {
+            color: inherit;
+            text-decoration: underline;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            color: #fff;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            border-radius: 12px;
+            border: none;
+            background: #fff;
+            color: #000;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 1.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .btn-signin {
+            width: 100%;
+            padding: 1.2rem;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 2rem;
+            transition: background 0.3s;
+        }
+
+        .btn-signin:hover {
+            background: #1d4ed8;
+        }
+
+        .divider {
+            margin: 2.5rem 0;
+            display: flex;
+            align-items: center;
+            color: #475569;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex-grow: 1;
+            height: 1px;
+            background: #1e293b;
+        }
+
+        .divider span {
+            padding: 0 1rem;
+        }
+
+        /* Social/Provider Buttons */
+        .btn-outline {
+            width: 100%;
+            padding: 1rem;
+            background: transparent;
+            color: white;
+            border: 1px solid #1e293b;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .btn-outline svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Right Side: Cyber Image */
+        .image-side {
+            width: 60%;
+            background-image: url('/static/cyber_bg.png');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .image-side::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, #020617 0%, transparent 10%, transparent 90%, #020617 100%);
+            pointer-events: none;
+        }
+
+        @media (max-width: 1200px) {
+            .auth-side {
+                width: 50%;
+                padding: 4rem;
+            }
+
+            .image-side {
+                width: 50%;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .image-side {
+                display: none;
+            }
+
+            .auth-side {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="split-container">
+        <!-- Auth Side -->
+        <div class="auth-side">
+            <h1 id="auth-title">Sign in</h1>
+            <p id="auth-subtitle">Don't have an account? <a href="#" id="toggle-auth">Create now</a></p>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="example@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-container">
+                        <input type="password" id="password" placeholder="@#*%" required>
+                        <span class="password-toggle" id="toggle-pwd">
+                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                        </span>
+                    </div>
+                </div>
+                <button type="submit" class="btn-signin" id="btn-submit">Sign in</button>
+            </form>
+
+            <div id="phone-auth-container" style="display: none;">
+                <div class="form-group">
+                    <label>Mobile Number (defaults to +91)</label>
+                    <input type="tel" id="phone-number" placeholder="9876543210">
+                </div>
+                <div id="recaptcha-container"></div>
+                <div class="form-group" id="otp-group" style="display: none; margin-top: 1rem;">
+                    <label>Verification Code</label>
+                    <input type="text" id="verification-code" placeholder="123456">
+                </div>
+                <button class="btn-signin" id="btn-phone-submit">Send Code</button>
+                <p style="text-align: center; margin-top: 1rem;"><a href="#" id="back-to-email">Back to Email</a></p>
+            </div>
+
+            <div class="divider">
+                <span>OR</span>
+            </div>
+
+            <button class="btn-outline" id="google-login">
+                <svg viewBox="0 0 48 48">
+                    <path fill="#FFC107"
+                        d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z">
+                    </path>
+                    <path fill="#FF3D00"
+                        d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z">
+                    </path>
+                    <path fill="#4CAF50"
+                        d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z">
+                    </path>
+                    <path fill="#1976D2"
+                        d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z">
+                    </path>
+                </svg>
+                Continue with Google
+            </button>
+
+            <button class="btn-outline" id="phone-login-trigger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path
+                        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l2.27-2.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 {2.81}.7A2 2 0 0 1 22 16.92z" />
+                </svg>
+                Continue with Phone
+            </button>
+        </div>
+
+        <!-- Image Side -->
+        <div class="image-side"></div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        auth.useDeviceLanguage();
+
+        // UI Elements
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const loginForm = document.getElementById('login-form');
+        const phoneContainer = document.getElementById('phone-auth-container');
+        const btnSubmit = document.getElementById('btn-submit');
+        const btnPhoneSubmit = document.getElementById('btn-phone-submit');
+        const otpGroup = document.getElementById('otp-group');
+        let isRegisterMode = false;
+        let confirmationResult = null;
+
+        // Mode Switching
+        toggleAuth.onclick = (e) => {
+            e.preventDefault();
+            isRegisterMode = !isRegisterMode;
+            authTitle.innerText = isRegisterMode ? 'Sign up' : 'Sign in';
+            btnSubmit.innerText = isRegisterMode ? 'Create account' : 'Sign in';
+            authSubtitle.innerHTML = isRegisterMode ?
+                'Already have an account? <a href="#" id="toggle-auth">Sign in</a>' :
+                "Don't have an account? <a href='#' id='toggle-auth'>Create now</a>";
+            // Re-bind because innerHTML destroys old link
+            document.getElementById('toggle-auth').onclick = toggleAuth.onclick;
+        };
+
+        // Password Toggle
+        const togglePwd = document.getElementById('toggle-pwd');
+        const pwdInput = document.getElementById('password');
+        togglePwd.onclick = () => {
+            pwdInput.type = pwdInput.type === 'password' ? 'text' : 'password';
+        };
+
+        // Handlers
+        async function sendTokenToServer(user) {
+            const idToken = await user.getIdToken();
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id_token: idToken })
+            });
+            const data = await response.json();
+            if (data.status === 'success') window.location.href = '/dashboard';
+        }
+
+        function setLoading(btn, isLoading) {
+            btn.disabled = isLoading;
+            btn.style.opacity = isLoading ? '0.7' : '1';
+            if (isLoading) {
+                btn.dataset.original = btn.innerText;
+                btn.innerText = 'Processing...';
+            } else {
+                btn.innerText = btn.dataset.original || btn.innerText;
+            }
+        }
+
+        // Email Auth
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            setLoading(btnSubmit, true);
+            try {
+                let result;
+                if (isRegisterMode) {
+                    result = await auth.createUserWithEmailAndPassword(email, password);
+                    // Send verification email
+                    await result.user.sendEmailVerification();
+                    alert("A verification email has been sent to " + email + ". Please verify your email before signing in.");
+                    // Sign out the user immediately after registration so they have to verify and sign in properly
+                    await auth.signOut();
+                    isRegisterMode = false;
+                    authTitle.innerText = 'Sign in';
+                    btnSubmit.innerText = 'Sign in';
+                    authSubtitle.innerHTML = "Don't have an account? <a href='#' id='toggle-auth'>Create now</a>";
+                    document.getElementById('toggle-auth').onclick = toggleAuth.onclick;
+                } else {
+                    result = await auth.signInWithEmailAndPassword(email, password);
+                    // Check if email is verified
+                    if (!result.user.emailVerified) {
+                        alert("Please verify your email address before signing in. Check your inbox.");
+                        await auth.signOut();
+                        return;
+                    }
+                    await sendTokenToServer(result.user);
+                }
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                setLoading(btnSubmit, false);
+            }
+        };
+
+        // Phone Auth
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            'size': 'invisible'
+        });
+
+        document.getElementById('phone-login-trigger').onclick = () => {
+            loginForm.style.display = 'none';
+            phoneContainer.style.display = 'block';
+            document.querySelector('.divider').style.display = 'none';
+            document.getElementById('google-login').style.display = 'none';
+            document.getElementById('phone-login-trigger').style.display = 'none';
+            authTitle.innerText = "Phone Sign In";
+        };
+
+        document.getElementById('back-to-email').onclick = (e) => {
+            e.preventDefault();
+            loginForm.style.display = 'block';
+            phoneContainer.style.display = 'none';
+            document.querySelector('.divider').style.display = 'flex';
+            document.getElementById('google-login').style.display = 'flex';
+            document.getElementById('phone-login-trigger').style.display = 'flex';
+            authTitle.innerText = isRegisterMode ? 'Sign up' : 'Sign in';
+        };
+
+        btnPhoneSubmit.onclick = async () => {
+            if (!confirmationResult) {
+                let rawInput = document.getElementById('phone-number').value.trim();
+                if (!rawInput) return alert("Please enter a mobile number.");
+
+                // Keep only digits for analysis
+                let digitsOnly = rawInput.replace(/\D/g, '');
+                let phoneNumber = "";
+
+                if (rawInput.startsWith('+')) {
+                    // If they entered a +, use the raw input digits with a leading +
+                    phoneNumber = '+' + digitsOnly;
+                } else if (digitsOnly.length === 10) {
+                    // Standard 10 digits
+                    phoneNumber = '+91' + digitsOnly;
+                } else if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
+                    // 12 digits starting with 91
+                    phoneNumber = '+' + digitsOnly;
+                } else if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
+                    // 11 digits starting with 0
+                    phoneNumber = '+91' + digitsOnly.substring(1);
+                } else {
+                    // Fallback for other lengths
+                    if (digitsOnly.length < 10) {
+                        alert("The number entered is too short. Please enter a 10-digit mobile number.");
+                        return;
+                    }
+                    phoneNumber = '+91' + digitsOnly;
+                }
+
+                // Final safety check for TOO_SHORT (India specific: +91 + 10 digits = 13 chars)
+                if (phoneNumber.length < 13) {
+                    alert("Invalid format. Please enter a full 10-digit mobile number. Current: " + phoneNumber);
+                    return;
+                }
+
+                console.log("Sending to Firebase:", phoneNumber);
+
+                try {
+                    confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
+                    otpGroup.style.display = 'block';
+                    btnPhoneSubmit.innerText = 'Verify OTP';
+                } catch (error) {
+                    console.error("Phone Auth Error 상세:", error);
+                    if (error.code === 'auth/billing-not-enabled') {
+                        alert("FAILED: Firebase Billing Not Enabled.\n\nTo use real SMS OTP, you must upgrade your Firebase project to the 'Blaze' plan.\n\nAlternatively, for testing, you can add a 'Test Phone Number' in your Firebase Console (Authentication > Settings > Phone) and use it for free without billing.");
+                        console.warn("User needs to enable billing or use test numbers: https://console.firebase.google.com/project/_/authentication/providers");
+                    } else {
+                        alert("Authentication Error: " + error.message);
+                    }
+                    if (window.recaptchaVerifier) {
+                        window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
+                    }
+                } finally {
+                    setLoading(btnPhoneSubmit, false);
+                }
+            } else {
+                const code = document.getElementById('verification-code').value.trim();
+                if (!code) return alert("Enter the verification code");
+                setLoading(btnPhoneSubmit, true);
+                try {
+                    const result = await confirmationResult.confirm(code);
+                    await sendTokenToServer(result.user);
+                } catch (error) {
+                    alert("Invalid code: " + error.message);
+                } finally {
+                    setLoading(btnPhoneSubmit, false);
+                }
+            }
+        };
+
+        // Google Login
+        document.getElementById('google-login').onclick = async (e) => {
+            const btn = e.currentTarget;
+            setLoading(btn, true);
+            try {
+                const result = await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+                await sendTokenToServer(result.user);
+            } catch (e) {
+                if (e.code !== 'auth/cancelled-popup-request' && e.code !== 'auth/popup-closed-by-user') {
+                    alert('Google login failed: ' + e.message);
+                }
+            } finally {
+                setLoading(btn, false);
+            }
+        };
+
+        auth.onAuthStateChanged(user => {
+            if (user) window.location.href = '/dashboard';
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,61 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Database
+data/
+*.db
+*.index
+cycle_output*
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*,cover
+.hypothesis/
+
+# Firebase/Google Cloud
+service-account.json
+.firebaserc
+
+# Vercel
+.vercel
+
+# Temp/Audit files
+status.txt
+remote.txt
+untracked.txt
+gitignore.txt
+check_status.py
+verify_today.py
+verification_result.txt
+deployment_log.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+v e n v /  
+ . v e n v /  
+node_modules/
+.cache/
+.npm/
+package-lock.json
+

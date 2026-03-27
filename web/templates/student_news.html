@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Students</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=4.8">
+    <style>
+        /* Mobile Menu Toggle */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-main);
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1003;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            .nav-center {
+                display: none !important;
+            }
+            .nav-container {
+                padding: 1rem 1rem;
+            }
+            .page-title {
+                font-size: 2rem !important;
+            }
+            .page-subtitle {
+                font-size: 1rem !important;
+            }
+            .main-container {
+                padding: 0 1rem !important;
+                margin-top: 20px !important;
+            }
+            .trend-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: rgba(30, 41, 59, 0.7);
+            --bg-hover: rgba(51, 65, 85, 0.9);
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-gold: #fbbf24;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --glass-bg: rgba(15, 23, 42, 0.85);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .nav-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .nav-center {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-blue);
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Trend Dashboard */
+        .trend-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Layout Grid */
+        .content-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 2rem;
+        }
+
+        /* Filters */
+        .filter-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            height: fit-content;
+            position: sticky;
+            top: 100px;
+        }
+
+        .filter-group {
+            margin-bottom: 2rem;
+        }
+
+        .filter-group h3 {
+            font-size: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+        }
+
+        .filter-btn {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 0;
+            cursor: pointer;
+            transition: color 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .filter-btn:hover {
+            color: var(--accent-blue);
+        }
+
+        .filter-btn.active {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
+
+        /* Student Cards */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .student-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .student-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-color: var(--accent-blue);
+        }
+
+        .card-image-container {
+            height: 160px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .student-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .urgency-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            background: var(--accent-red);
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 20px;
+            text-transform: uppercase;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .urgency-badge.medium {
+            background: var(--accent-gold);
+            color: #000;
+        }
+
+        .urgency-badge.low {
+            background: var(--border-color);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 800;
+            margin: 0 0 0.75rem 0;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-summary {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--accent-blue);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .card-details {
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+        }
+
+        .detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .detail-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .detail-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        @media (max-width: 900px) {
+            .content-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-sidebar {
+                position: static;
+            }
+        }
+        .chat-btn-student {
+            background: var(--accent-blue);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+
+        .chat-btn-student:hover {
+            transform: translateY(-2px);
+            opacity: 0.9;
+        }
+
+        /* Sidebar & Modal Styles from Dashboard */
+        .fixed-sidebar { position: fixed; top: 120px; width: 140px; z-index: 100; transition: all 0.3s; }
+        .fixed-sidebar.left { left: 20px; }
+        .fixed-sidebar.right { right: 20px; }
+        .sidebar-close { position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+        @media (max-width: 1600px) { .fixed-sidebar { display: none; } }
+        
+        .ad-container-slider { position: relative; overflow: hidden; height: 100%; }
+        .ad-slide { 
+            display: none; 
+            animation: fadeInAd 0.8s ease-in-out; 
+            height: 100%;
+            flex-direction: column;
+        }
+        .ad-slide.active { display: flex; }
+        @keyframes fadeInAd {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); display: none; z-index: 10000; justify-content: center; align-items: center; }
+        .animate-bounce-subtle { animation: bounce-subtle 4s infinite ease-in-out; }
+        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    </style>
+</head>
+
+<body>
+    <nav class="nav-container">
+        <a href="/dashboard" class="logo" style="display: flex; gap: 0.25rem;">
+            <span style="color: #FFFFFF;">UNI</span>
+            <span style="color: #0047AB;">INTEL</span>
+        </a>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        <div class="nav-center">
+            <a href="/dashboard" class="nav-link">Home</a>
+            <a href="/dashboard?country=India" class="nav-link">India Node</a>
+            <a href="/dashboard#newspaper-section" class="nav-link">Newspapers</a>
+            <a href="/student-news" class="nav-link" style="color: var(--accent-blue); font-weight: 600;">FOR
+                STUDENTS</a>
+            <a href="/personal-agent" class="nav-link" style="color: var(--accent-purple); font-weight: 600;">PERSONAL AI NEWS</a>
+            <a href="/crystal-ball" class="nav-link" style="color: var(--accent-cyan); font-weight: 600;">CRYSTAL BALL</a>
+        </div>
+        <div id="global-lang-switcher" style="display:flex; align-items:center; gap:0.4rem; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color); backdrop-filter: blur(5px);">
+            <span style="font-size: 0.8rem;">🌐</span>
+            <select id="lang-select" onchange="changeLang(this.value)" style="background:transparent; color: #FFFFFF; border:none; font-size:0.8rem; cursor:pointer; outline:none; font-weight: 700; text-transform: uppercase;">
+                <style>
+                    #lang-select option {
+                        background: #1e293b;
+                        color: #FFFFFF;
+                        padding: 10px;
+                    }
+                </style>
+                <option value="english" {% if not selected_lang or selected_lang == 'english' %}selected{% endif %}>EN</option>
+                <option value="Telugu" {% if selected_lang == 'Telugu' %}selected{% endif %}>TE</option>
+                <option value="Hindi" {% if selected_lang == 'Hindi' %}selected{% endif %}>HI</option>
+                <option value="Tamil" {% if selected_lang == 'Tamil' %}selected{% endif %}>TA</option>
+                <option value="Kannada" {% if selected_lang == 'Kannada' %}selected{% endif %}>KA</option>
+                <option value="Malayalam" {% if selected_lang == 'Malayalam' %}selected{% endif %}>ML</option>
+                <option value="Bengali" {% if selected_lang == 'Bengali' %}selected{% endif %}>BN</option>
+                <option value="Marathi" {% if selected_lang == 'Marathi' %}selected{% endif %}>MR</option>
+                <option value="Gujarati" {% if selected_lang == 'Gujarati' %}selected{% endif %}>GU</option>
+                <option value="Punjabi" {% if selected_lang == 'Punjabi' %}selected{% endif %}>PA</option>
+                <option value="Odia" {% if selected_lang == 'Odia' %}selected{% endif %}>OR</option>
+                <option value="Urdu" {% if selected_lang == 'Urdu' %}selected{% endif %}>UR</option>
+                <option value="Spanish" {% if selected_lang == 'Spanish' %}selected{% endif %}>ES</option>
+                <option value="Arabic" {% if selected_lang == 'Arabic' %}selected{% endif %}>AR</option>
+                <option value="Japanese" {% if selected_lang == 'Japanese' %}selected{% endif %}>JP</option>
+                <option value="French" {% if selected_lang == 'French' %}selected{% endif %}>FR</option>
+                <option value="Chinese" {% if selected_lang == 'Chinese' %}selected{% endif %}>ZH</option>
+                <option value="German" {% if selected_lang == 'German' %}selected{% endif %}>DE</option>
+                <option value="Russian" {% if selected_lang == 'Russian' %}selected{% endif %}>RU</option>
+                <option value="Korean" {% if selected_lang == 'Korean' %}selected{% endif %}>KO</option>
+            </select>
+            <button onclick="changeLang(document.getElementById('lang-select').value)" style="background:var(--accent-blue); color:white; border:none; padding:4px 10px; border-radius:15px; font-size:0.7rem; font-weight:700; cursor:pointer; margin-left:5px;">TRANSLATE</button>
+        </div>
+    </nav>
+    <script>
+        function changeLang(val) {
+            const url = new URL(window.location.href);
+            if (val && val !== 'english') url.searchParams.set('lang', val);
+            else url.searchParams.delete('lang');
+            window.location.href = url.toString();
+        }
+    </script>
+
+    <div class="main-container">
+        <div class="page-header">
+            <h1 class="page-title">Student Intelligence Hub</h1>
+            <p class="page-subtitle">Real-time tracking of exams, policies, scholarships, and opportunities parsed
+                directly from the news without delay.</p>
+        </div>
+
+        <div class="trend-panel">
+            <div class="stat-card">
+                <div class="stat-value">{{ trends.get('total_articles', 0) }}</div>
+                <div class="stat-label">Active Opportunities</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: var(--accent-gold); font-size: 1.8rem; padding: 0.35rem 0;">
+                    {{ trends.get('most_discussed_topic', 'N/A').replace('#', '') }}
+                </div>
+                <div class="stat-label">Trending Topic</div>
+            </div>
+            <a href="/student-news?category=Scholarships+%26+Internships"
+                style="text-decoration:none; color:inherit; display:block;">
+                <div class="stat-card" style="cursor: pointer; transition: transform 0.2s;"
+                    onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='none'">
+                    <div class="stat-value" style="color: var(--accent-green);">{{ trends.get('scholarship_count', 0) }}
+                    </div>
+                    <div class="stat-label">Live Scholarships</div>
+                </div>
+            </a>
+        </div>
+
+        <div class="content-layout">
+            <aside class="filter-sidebar">
+                <div class="filter-group">
+                    <h3>Region / Country</h3>
+                    <input list="countries-list" id="country-filter" placeholder="Search a country..." value="{{ current_country if current_country and current_country|lower != 'global' else '' }}" style="width: 100%; padding: 0.8rem; background: var(--bg-hover); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; margin-bottom: 0.5rem; font-family: inherit; font-size: 1rem;" onchange="updateCountryFilter()">
+                    <datalist id="countries-list"></datalist>
+                    <button onclick="updateCountryFilter()" style="width:100%; padding:0.6rem; background:var(--accent-blue); color:white; border:none; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.9rem; margin-top:0.25rem;">🔍 Search Country</button>
+                </div>
+                
+                <script>
+                    const allCountries = [
+                        "Global", "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Côte d'Ivoire", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Holy See", "Honduras", "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "UK", "Ukraine", "UAE", "USA", "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+                    ];
+                    const datalist = document.getElementById('countries-list');
+                    allCountries.forEach(c => {
+                        let option = document.createElement('option');
+                        option.value = c;
+                        datalist.appendChild(option);
+                    });
+
+                    function updateCountryFilter() {
+                        const country = document.getElementById('country-filter').value.trim();
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (!country || country === "Global") {
+                            urlParams.delete('country');
+                        } else {
+                            urlParams.set('country', country);
+                        }
+                        window.location.search = urlParams.toString();
+                    }
+
+                    // Trigger on Enter key
+                    document.getElementById('country-filter').addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') updateCountryFilter();
+                    });
+                </script>
+
+                <div class="filter-group">
+                    <h3>Categories</h3>
+                    <a href="/student-news?category=All"><button
+                            class="filter-btn {% if current_category == 'All' %}active{% endif %}">All
+                            Updates</button></a>
+                    {% for cat in categories %}
+                    <a href="/student-news?category={{ cat|urlencode }}"><button
+                            class="filter-btn {% if current_category == cat %}active{% endif %}">{{ cat }}</button></a>
+                    {% endfor %}
+                </div>
+
+                <div class="filter-group">
+                    <h3>Student Profile (Auto-Filter)</h3>
+                    <a href="/student-news"><button class="filter-btn {% if not current_profile %}active{% endif %}">Any
+                            Profile</button></a>
+                    {% for prof in profiles %}
+                    <a href="/student-news?profile={{ prof|urlencode }}"><button
+                            class="filter-btn {% if current_profile == prof %}active{% endif %}">{{ prof }}</button></a>
+                    {% endfor %}
+                </div>
+            </aside>
+
+            <main>
+                {% if not articles %}
+                <div
+                    style="text-align: center; padding: 4rem; background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color);">
+                    <h2 style="color: var(--text-secondary);">No updates found for this category currently.</h2>
+                    <p style="color: var(--text-muted);">The system is constantly scanning. Check back soon.</p>
+                </div>
+                {% endif %}
+
+                <div class="news-grid">
+                    {% for article in articles %}
+                    <div class="student-card" onclick="window.open('{{ article.url }}', '_blank')">
+                        <div class="card-image-container">
+                            <img src="{{ article.image_url }}" alt="News Image" class="card-image" onerror="this.src='/static/news-fallback.jpg'">
+                            {% if article.urgency == 'High' %}
+                            <div class="urgency-badge">High Urgency</div>
+                            {% elif article.urgency == 'Medium' %}
+                            <div class="urgency-badge medium">Medium</div>
+                            {% else %}
+                            <div class="urgency-badge low">Low</div>
+                            {% endif %}
+                        </div>
+                        <div class="card-content">
+                            <div class="card-meta">
+                                <span>{{ article.source_name }}</span>
+                                <span>Trend Score: {{ article.trend_score }}/100</span>
+                            </div>
+
+                            <h3 class="card-title">{{ article.title }}</h3>
+
+                            <div class="card-tags">
+                                {% for tag in article.tags %}
+                                <span class="tag">{{ tag }}</span>
+                                {% endfor %}
+                            </div>
+
+                            <p class="card-summary">{{ article.summary }}</p>
+
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <span class="detail-label">Authority / Source</span>
+                                    <span class="detail-value">{{ article.authority }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Important Dates</span>
+                                    <span class="detail-value">
+                                        {% if article.important_dates %}
+                                        {{ article.important_dates | join(', ') }}
+                                        {% else %}
+                                        None Specified
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div style="margin-top: auto; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding-top: 1.5rem;">
+                                {% set final_link = article.access_link if article.access_link else (article.direct_links[0] if article.direct_links else article.url) %}
+                                <a href="{{ final_link }}" target="_blank" onclick="event.stopPropagation()" style="display: inline-block; padding: 0.6rem 1.2rem; background: var(--accent-blue); color: white; text-decoration: none; border-radius: 8px; font-size: 0.85rem; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">Apply / Access Link</a>
+                                <button onclick="event.stopPropagation(); navigator.clipboard.writeText('{{ article.url }}'); alert('Shared! Link copied to clipboard.')" style="display: inline-block; padding: 0.6rem 1rem; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">Share Intel</button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div id="load-more-container" style="text-align: center; margin-top: 3rem; margin-bottom: 2rem;">
+                    <button id="load-more-btn" onclick="loadMoreNews()" style="padding: 1rem 2rem; background: transparent; color: var(--accent-blue); border: 2px solid var(--accent-blue); border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='var(--accent-blue)'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='var(--accent-blue)';">Load More Articles ↓</button>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- TARGETED CAMPAIGN POPUP -->
+    {% if active_campaign %}
+    <div id="active-campaign-popup" class="modal-overlay" style="display: flex;">
+        <div class="animate-bounce-subtle" style="width: 320px; background: #ffffff; border-radius: 28px; overflow: hidden; position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6);">
+            <button onclick="document.getElementById('active-campaign-popup').style.display='none'" style="position: absolute; top: 15px; right: 15px; width: 32px; height: 32px; border-radius: 50%; background: #000; color: #fff; border: none; cursor: pointer; font-size: 20px;">&times;</button>
+            <a href="{{ active_campaign.targetUrl or '#' }}" target="_blank" style="text-decoration: none; color: inherit;">
+                <div style="height: 180px; background: #eee;">
+                    <img src="{{ active_campaign.imageUrl }}" style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                <div style="padding: 25px; text-align: center;">
+                    <h3 style="color: #111; font-size: 1.2rem; font-weight: 800; margin-bottom: 15px;">{{ active_campaign.headline }}</h3>
+                    <div style="display: inline-block; padding: 12px 30px; background: #2563eb; color: white; border-radius: 12px; font-weight: 700;">Learn More</div>
+                </div>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="fixed-sidebar left" id="sidebar-left" {% if not left_ads %}style="display: none;"{% endif %}>
+        <button class="sidebar-close" onclick="this.parentElement.style.display='none'">×</button>
+        <div class="sidebar-content" style="text-align: center;">
+            <span style="color: var(--text-muted); font-size: 0.6rem;">ADVERTISEMENT</span>
+            <div class="ad-container-slider" id="ad-slider-left">
+                {% for ad in left_ads %}
+                <div class="ad-slide {% if loop.first %}active{% endif %}" {% if not loop.first %}style="display: none;"{% endif %}>
+                    <a href="{{ ad.target_url if ad and ad.target_url else '#' }}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
+                        <div style="width: 100%; height: 200px; background: #1e293b; margin: 5px 0; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
+                            <img src="{{ ad.image_url if ad else 'https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=400&q=80' }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.7;">
+                            <div style="position: absolute; bottom: 8px; left: 0; right: 0; color: white; font-size: 0.6rem; font-weight: 700; text-shadow: 0 1px 2px black;">{{ ad.caption if ad else 'STUDENT INTEL' }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed-sidebar right" id="sidebar-right" {% if not right_ads %}style="display: none;"{% endif %}>
+        <button class="sidebar-close" onclick="this.parentElement.style.display='none'">×</button>
+        <div class="sidebar-content" style="text-align: center;">
+            <span style="color: var(--text-muted); font-size: 0.6rem;">PROMOTED</span>
+            <div class="ad-container-slider" id="ad-slider-right">
+                {% for ad in right_ads %}
+                <div class="ad-slide {% if loop.first %}active{% endif %}" {% if not loop.first %}style="display: none;"{% endif %}>
+                    <a href="{{ ad.target_url if ad and ad.target_url else '#' }}" target="_blank" style="text-decoration: none; color: inherit; display: block;">
+                        <div style="width: 100%; height: 200px; background: #1a0f2e; margin: 5px 0; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid var(--border-color);">
+                            <img src="{{ ad.image_url if ad else 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?auto=format&fit=crop&w=400&q=80' }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.7;">
+                            <div style="position: absolute; bottom: 8px; left: 0; right: 0; color: white; font-size: 0.6rem; font-weight: 700; text-shadow: 0 1px 2px black;">{{ ad.caption if ad else 'SPONSORED' }}</div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- CAMPAIGN MODAL (MOBILE OVERLAY) -->
+    <div id="campaign-popup" class="modal-overlay" {% if not mobile_ads %}style="display: none;"{% endif %}>
+        <div class="ad-container-slider" id="ad-slider-mobile" style="width: 320px; height: auto;">
+            {% for ad in mobile_ads %}
+            <div class="ad-slide {% if loop.first %}active{% endif %}" {% if not loop.first %}style="display: none;"{% endif %}>
+                <div class="animate-bounce-subtle" style="width: 100%; background: #ffffff; border-radius: 28px; overflow: hidden; position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.6);">
+                    <button onclick="document.getElementById('campaign-popup').style.display='none'" style="position: absolute; top: 15px; right: 15px; width: 32px; height: 32px; border-radius: 50%; background: #000; color: #fff; border: none; cursor: pointer; font-size: 20px; z-index: 10;">&times;</button>
+                    <a href="{{ ad.target_url if ad.target_url else '#' }}" target="_blank" style="text-decoration: none; color: inherit;">
+                        <div style="height: 180px; background: #eee;">
+                            <img src="{{ ad.image_url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        </div>
+                        <div style="padding: 25px; text-align: center;">
+                            <h3 style="color: #111; font-size: 1.2rem; font-weight: 800; margin-bottom: 15px;">{{ ad.caption }}</h3>
+                            <div style="display: inline-block; padding: 12px 30px; background: #2563eb; color: white; border-radius: 12px; font-weight: 700;">Learn More</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                console.log("Student Portal: User authenticated", user.email);
+            } else {
+                console.warn("Student Portal: User not logged in, but allowing view.");
+            }
+        });
+    </script>
+    <!-- Mobile Navigation Overlay -->
+    <div class="nav-mask" id="nav-mask" onclick="toggleMobileMenu()"></div>
+    <div class="mobile-nav-overlay" id="mobile-nav-overlay">
+        <div class="mobile-nav-close" onclick="toggleMobileMenu()">×</div>
+        <a href="/dashboard" class="mobile-nav-link">🏠 Home</a>
+        <a href="/business-intelligence" class="mobile-nav-link" style="color: var(--accent-gold); font-weight: 700;">📊 Senior Analyst Report</a>
+        <a href="/saved" class="mobile-nav-link">🔖 Saved</a>
+        <a href="/universe" class="mobile-nav-link">🌌 Universe</a>
+        <a href="/student-news" class="mobile-nav-link" style="color: var(--accent-blue);">🎓 For Students</a>
+        <a href="/personal-agent" class="mobile-nav-link" style="color: var(--accent-purple);">🤖 Personal AI</a>
+        <a href="/crystal-ball" class="mobile-nav-link" style="color: var(--accent-cyan);">🔮 Crystal Ball</a>
+        <hr style="border: none; border-top: 1px solid var(--border-color); width: 100%;">
+        <a href="/history" class="mobile-nav-link">📖 History</a>
+        <a href="/dashboard#newspaper-section" class="mobile-nav-link">📰 Newspaper</a>
+    </div>
+
+    <script>
+        function toggleMobileMenu() {
+            const overlay = document.getElementById('mobile-nav-overlay');
+            const mask = document.getElementById('nav-mask');
+            overlay.classList.toggle('active');
+            mask.classList.toggle('active');
+            
+            if (overlay.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+        
+        let currentOffset = 10;
+        const loadLimit = 10;
+        
+        async function loadMoreNews() {
+            const btn = document.getElementById('load-more-btn');
+            if(!btn) return;
+            
+            btn.innerText = 'Loading...';
+            btn.disabled = true;
+            
+            const params = new URLSearchParams(window.location.search);
+            const country = params.get('country') || 'India';
+            const category = params.get('category') || 'Scholarships & Internships';
+            const profile = params.get('profile') || '';
+            
+            try {
+                const response = await fetch(`/api/get-student-news?country=${encodeURIComponent(country)}&category=${encodeURIComponent(category)}&profile=${encodeURIComponent(profile)}&offset=${currentOffset}&limit=${loadLimit}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    const grid = document.querySelector('.news-grid');
+                    if(data.articles && data.articles.length > 0) {
+                        data.articles.forEach(article => {
+                            const urgencyBadge = article.urgency === 'High' ? '<div class="urgency-badge">High Urgency</div>' : 
+                                               (article.urgency === 'Medium' ? '<div class="urgency-badge medium">Medium</div>' : '<div class="urgency-badge low">Low</div>');
+                                               
+                            const tagsHtml = (article.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+                            const datesStr = (article.important_dates && article.important_dates.length) ? article.important_dates.join(', ') : 'None Specified';
+                            
+                            const finalLink = article.access_link || ((article.direct_links && article.direct_links.length > 0) ? article.direct_links[0] : article.url);
+                            
+                            const card = document.createElement('div');
+                            card.className = 'student-card';
+                            card.onclick = () => window.open(article.url, '_blank');
+                            card.innerHTML = `
+                                <div class="card-image-container">
+                                    <img src="${article.image_url}" alt="News Image" class="card-image" onerror="this.src='/static/news-fallback.jpg'">
+                                    ${urgencyBadge}
+                                </div>
+                                <div class="card-content">
+                                    <div class="card-meta">
+                                        <span>${article.source_name || 'Global'}</span>
+                                        <span>Trend Score: ${article.trend_score || 0}/100</span>
+                                    </div>
+                                    <h3 class="card-title">${article.title}</h3>
+                                    <div class="card-tags">${tagsHtml}</div>
+                                    <p class="card-summary">${article.summary}</p>
+                                    <div class="card-details">
+                                        <div class="detail-item">
+                                            <span class="detail-label">Authority / Source</span>
+                                            <span class="detail-value">${article.authority || 'Various'}</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <span class="detail-label">Important Dates</span>
+                                            <span class="detail-value">${datesStr}</span>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: auto; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; padding-top: 1.5rem;">
+                                        <a href="${finalLink}" target="_blank" onclick="event.stopPropagation()" style="display: inline-block; padding: 0.6rem 1.2rem; background: var(--accent-blue); color: white; text-decoration: none; border-radius: 8px; font-size: 0.85rem; font-weight: 800; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">Apply / Access Link</a>
+                                        <button onclick="event.stopPropagation(); navigator.clipboard.writeText('${article.url}'); alert('Shared! Link copied to clipboard.')" style="display: inline-block; padding: 0.6rem 1rem; background: rgba(255,255,255,0.05); color: white; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor:pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.15)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">Share Intel</button>
+                                    </div>
+                                </div>
+                            `;
+                            grid.appendChild(card);
+                        });
+                        currentOffset += loadLimit;
+                    }
+                    if(!data.has_more) {
+                        btn.style.display = 'none';
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to load more news:", e);
+                alert("Failed to load more articles.");
+            } finally {
+                btn.innerText = 'Load More Articles ↓';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+
+</html>

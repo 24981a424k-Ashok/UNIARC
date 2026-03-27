@@ -1,0 +1,75 @@
+<!-- Improved Image Logic with Random Gradient Fallback -->
+{% set bg_image = story.image_url %}
+{% if bg_image %}
+<div class="intel-card-image" style="background-image: url('{{ bg_image }}');" data-bg="{{ bg_image }}">
+    {% else %}
+    <div class="intel-card-image" style="background: linear-gradient(135deg, #1e293b, #0f172a);" data-bg="">
+        {% endif %}
+
+        {% set clean_title = (story.title or "") | replace("'", "") | replace('"', "") |
+        replace("\\", "") %}
+        {% set clean_category = (selected_category or "top_stories") | replace("'", "") |
+        replace('"', "") %}
+        <!-- Fallback Script for this specific card -->
+        <!-- Unified Error Handler for consistent fallback variety -->
+        <img src="{{ bg_image or '#' }}" style="display:none;" data-cat="{{ clean_category }}"
+            data-seed="{{ clean_title }}" data-index="{{ global_index }}"
+            onerror="handleImageError(this, this.dataset.cat, this.dataset.seed, this.dataset.index)">
+
+        <button class=" save-btn" onclick="saveArticle(event, '{{ story.id }}')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="intel-header">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="color:var(--accent-blue); font-size:0.8rem; font-weight:700;">
+                {% if story.is_global_fallback %}
+                <span style="color:var(--accent-gold);">[GLOBAL]</span> {{ story.source_name }}
+                {% else %}
+                VERIFIED: {{ story.source_name }}
+                {% endif %}
+            </span>
+            <span style="color:var(--text-secondary); font-size:0.8rem;">{{ story.bias }}</span>
+        </div>
+        <h3 class="intel-title">{{ story.title }}</h3>
+
+        <!-- Tags as top buttons -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+            {% for tag in story.tags[:3] %}
+            <span
+                style="background:rgba(128,128,128,0.2); color:var(--text-primary); padding:4px 10px; border-radius:4px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">{{
+                tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bullets / Summary -->
+    <div class="intel-section">
+        <ul>
+            {% for bullet in story.bullets[:3] %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Who is Affected -->
+    <div class="intel-section" style="background:rgba(59, 130, 246, 0.05); border-left:3px solid var(--accent-blue);">
+        <h4 style="color:var(--accent-blue);">👥 Who is Affected</h4>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">{{ story.affected }}</p>
+    </div>
+
+    <!-- Why It Matters -->
+    <div class="intel-section" style="background:rgba(251, 188, 4, 0.05); border-left:3px solid var(--accent-gold);">
+        <h4 style="color:var(--accent-gold);">⚡ Why It Matters</h4>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">{{ story.why }}</p>
+    </div>
+
+    <div class="intel-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.8rem; color:var(--text-secondary);">AI Analysis • {{ story.time_ago or 'Just Now' }}</span>
+        <button class="card-chat-btn" onclick="openChatFromCard(event, '{{ story.id }}')" title="Quick Chat">
+            💬
+        </button>
+    </div>

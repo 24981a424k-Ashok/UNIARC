@@ -1,0 +1,51 @@
+﻿git : remote: [31m---------
+----------------------------
+----------------------------
+--------[0m        
+At line:1 char:27
++ git push hf main *>$null; 
+git push hf main 2>&1 | 
+Out-File -FilePath  ...
++                           
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (remot  
+  e: [31m--...---[0m      
+      :String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+remote: [31mYour push was 
+rejected because it 
+contains binary files.[0m  
+      
+remote: [31mPlease use http
+s://huggingface.co/docs/hub/
+xet to store binary 
+files.[0m        
+remote: [31mSee also: https
+://huggingface.co/docs/hub/x
+et/using-xet-storage#git[0m
+        
+remote: [31m[0m        
+remote: [31mOffending 
+files:[0m        
+remote: [31m  - 
+cycle_output_final_v2.txt 
+(ref: refs/heads/main)[0m  
+      
+remote: [31m---------------
+----------------------------
+----------------------------
+--[0m        
+To https://huggingface.co/sp
+aces/ML-Innovator/Intelligen
+ce_Ai_news_agent.git
+ ! [remote rejected] main 
+-> main (pre-receive hook 
+declined)
+error: failed to push some 
+refs to 'https://huggingface
+.co/spaces/ML-Innovator/Inte
+lligence_Ai_news_agent.git'

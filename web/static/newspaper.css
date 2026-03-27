@@ -1,0 +1,145 @@
+/* Newspaper Section Styles */
+.newspaper-section {
+    margin-bottom: 4rem;
+    padding: 2rem;
+    background: var(--bg-surface);
+    border-radius: 24px;
+    border: 1px solid var(--glass-border);
+}
+
+.newspaper-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.newspaper-update-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 8px 16px;
+    border-radius: 12px;
+    color: var(--accent-blue);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.newspaper-update-time svg {
+    color: var(--accent-blue);
+}
+
+.newspaper-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.newspaper-card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.newspaper-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-blue);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.newspaper-logo {
+    width: 70px;
+    height: 70px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s;
+}
+
+.newspaper-card:hover .newspaper-logo {
+    transform: scale(1.1) rotate(2deg);
+}
+
+.newspaper-logo.bbc {
+    background: linear-gradient(135deg, #000000, #1a1a1a);
+    color: white;
+}
+
+.newspaper-logo.cnn {
+    background: linear-gradient(135deg, #cc0000, #ff0000);
+    color: white;
+}
+
+.newspaper-logo.news18 {
+    background: linear-gradient(135deg, #ff6b00, #ff8c00);
+    color: white;
+}
+
+.newspaper-logo.timesnow {
+    background: linear-gradient(135deg, #0066cc, #0080ff);
+    color: white;
+}
+
+.newspaper-info {
+    flex-grow: 1;
+}
+
+.newspaper-info h3 {
+    margin: 0 0 0.3rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.newspaper-info p {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.newspaper-badge {
+    display: inline-block;
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--accent-blue);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.newspaper-badge.india {
+    background: rgba(255, 107, 0, 0.15);
+    color: #ff8c00;
+    border-color: rgba(255, 107, 0, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .newspaper-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .newspaper-grid {
+        grid-template-columns: 1fr;
+    }
+}

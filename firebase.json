@@ -1,0 +1,20 @@
+{
+    "hosting": {
+        "public": "web/static",
+        "ignore": [
+            "firebase.json",
+            "**/.*",
+            "**/node_modules/**"
+        ],
+        "rewrites": [
+            {
+                "source": "**",
+                "function": "api"
+            }
+        ]
+    },
+    "functions": {
+        "source": ".",
+        "runtime": "python311"
+    }
+}

@@ -1,0 +1,29 @@
+runtime: python311
+
+# App Engine configuration
+instance_class: F2
+
+# Automatic scaling configuration
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 1
+  max_instances: 10
+
+# Environment variables (sensitive values should be set via Secret Manager)
+env_variables:
+  PORT: "8080"
+  LOG_LEVEL: "INFO"
+  SCHEDULE_TIME: "06:00"
+  ENABLE_EMAIL_ALERTS: "false"
+  DATABASE_URL: "sqlite:///./data/news.db"
+  VECTOR_DB_TYPE: "faiss"
+
+# Handlers for static files
+handlers:
+- url: /static
+  static_dir: web/static
+  secure: always
+
+- url: /.*
+  script: auto
+  secure: always

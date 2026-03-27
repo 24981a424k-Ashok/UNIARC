@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI News - Daily Mock Test</title>
+    <!-- CSS Versioning to force refresh -->
+    <link rel="stylesheet" href="/static/style.css?v=4.0">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <style>
+        /* Specific Styles for Mock Test Page Overrides */
+        body {
+            background: radial-gradient(circle at top center, #1e293b, #0f172a, #000000);
+            min-height: 100vh;
+        }
+
+        .exam-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .exam-sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+        }
+
+        .exam-logo {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: #fff;
+            margin-bottom: 3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .exam-logo span {
+            color: var(--accent-blue);
+        }
+
+        .exam-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .exam-nav-item:hover,
+        .exam-nav-item.active {
+            background: rgba(59, 130, 246, 0.1);
+            color: #fff;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .exam-main {
+            flex: 1;
+            padding: 2rem 4rem;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        /* Glass Cards */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        /* Hero Start Screen */
+        .hero-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, var(--accent-blue) 0%, #2563eb 100%);
+            color: white;
+            padding: 16px 48px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(37, 99, 235, 0.6);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            filter: grayscale(1);
+        }
+
+        /* Spinner */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--accent-blue);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        /* Exam Interface */
+        .exam-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .timer-badge {
+            background: rgba(220, 38, 38, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-family: 'Outfit', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .question-card h3 {
+            font-size: 1.5rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            color: #f1f5f9;
+        }
+
+        .option-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .option-tile {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #cbd5e1;
+        }
+
+        .option-tile:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .option-tile.selected {
+            background: rgba(37, 99, 235, 0.15);
+            border-color: var(--accent-blue);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.2) inset;
+        }
+
+        .option-marker {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .option-tile.selected .option-marker {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3rem;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .nav-btn.prev {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .nav-btn.prev:hover:not(:disabled) {
+            border-color: #fff;
+            color: #fff;
+        }
+
+        .nav-btn.next {
+            background: #fff;
+            color: #000;
+        }
+
+        .nav-btn.next:hover {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Results */
+        .result-score {
+            font-size: 4rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-green);
+            text-shadow: 0 0 30px rgba(34, 197, 94, 0.3);
+        }
+
+        .analysis-item {
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.5rem;
+        }
+
+        .analysis-item.correct {
+            border-left: 4px solid var(--accent-green);
+        }
+
+        .analysis-item.incorrect {
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .explanation-box {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .exam-layout {
+                flex-direction: column;
+            }
+
+            .exam-sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                display: none;
+                /* Hide sidebar on mobile, use top nav or simpler layout */
+            }
+
+            /* Simpler Mobile Header */
+            .mobile-exam-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1rem;
+                background: rgba(15, 23, 42, 0.9);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+
+            .exam-main {
+                padding: 1rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .glass-card {
+                padding: 1.5rem;
+            }
+
+            .exam-header-bar {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .timer-badge {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="exam-layout">
+        <!-- Sidebar -->
+        <aside class="exam-sidebar">
+            <div class="exam-logo">
+                UNI <span>AP</span>
+            </div>
+
+            <nav style="flex:1;">
+                <a href="/dashboard" class="exam-nav-item">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="/mock-test" class="exam-nav-item active">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    Mock Test
+                </a>
+            </nav>
+
+            <div class="user-mini-profile" id="user-info"
+                style="display:none; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1); display:flex; align-items:center; gap:10px;">
+                <img id="user-avatar" src="" style="width:32px; height:32px; border-radius:50%;" alt="">
+                <div style="font-size:0.9rem; color:#fff;" id="user-name">User</div>
+            </div>
+        </aside>
+
+        <!-- Mobile Header (Visible only on mobile) -->
+        <div class="mobile-exam-header" style="display:none;">
+            <div class="exam-logo" style="margin:0; font-size:1.2rem;">UNI <span>AP</span></div>
+            <a href="/dashboard" style="color:#cbd5e1; text-decoration:none; font-size:0.9rem;">Exit</a>
+        </div>
+
+        <script>
+            function checkMobileHeader() {
+                const header = document.querySelector('.mobile-exam-header');
+                if (window.innerWidth <= 768) {
+                    header.style.display = 'flex';
+                } else {
+                    header.style.display = 'none';
+                }
+            }
+            window.addEventListener('load', checkMobileHeader);
+            window.addEventListener('resize', checkMobileHeader);
+        </script>
+
+        <!-- Main Content -->
+        <main class="exam-main">
+
+            <!-- 1. Start Screen -->
+            <div id="exam-start-screen" class="glass-card"
+                style="max-width: 800px; margin: 3rem auto; text-align: center;">
+                <h1 class="hero-title">Daily Current Affairs Challenge</h1>
+                <p style="color:var(--text-secondary); font-size:1.1rem; max-width:600px; margin:0 auto;">
+                    Test your knowledge with 15 questions generated from verified news
+                    between yesterday 12 PM and today 9 PM IST.
+                </p>
+
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="stat-value">15</div>
+                        <div class="stat-label">Questions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">10m</div>
+                        <div class="stat-label">Time Limit</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">AI</div>
+                        <div class="stat-label">Generated</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 3rem;">
+                    <button id="start-exam-btn" class="start-btn">Start Mock Test</button>
+                    <div id="loading-exam" style="display:none; margin-top: 20px; color:var(--text-secondary);">
+                        <div class="spinner"></div> Curating Questions from Database...
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Exam Interface -->
+            <div id="exam-interface" style="display: none; max-width: 900px; margin: 0 auto;">
+                <div class="exam-header-bar">
+                    <div style="color:var(--text-secondary);">
+                        Question <span id="current-q-num" style="color:#fff; font-weight:700;">1</span> / <span
+                            id="total-q-num">15</span>
+                    </div>
+                    <div class="timer-badge">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                            <path
+                                d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" />
+                        </svg>
+                        <span id="exam-timer">10:00</span>
+                    </div>
+                </div>
+
+                <div id="question-container" class="glass-card">
+                    <!-- Questions Injected Here -->
+                </div>
+
+                <div class="nav-buttons">
+                    <button id="prev-btn" class="nav-btn prev" disabled>Previous</button>
+                    <button id="next-btn" class="nav-btn next">Next Question</button>
+                    <button id="submit-btn" class="nav-btn next"
+                        style="background:var(--accent-green); color:#fff; display:none;">Submit Test</button>
+                </div>
+            </div>
+
+            <!-- 3. Results Screen -->
+            <div id="results-screen" style="display: none; max-width: 800px; margin: 0 auto;" class="glass-card">
+                <div style="text-align:center; margin-bottom:3rem;">
+                    <h2 style="font-size:2rem; margin-bottom:1rem;">Exam Completed</h2>
+                    <div class="result-score" id="final-score">00</div>
+                    <div style="color:var(--text-secondary);">Correct Answers / 15</div>
+                </div>
+
+                <h3 style="border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:1rem; margin-bottom:1rem;">
+                    Performance Analysis</h3>
+                <div id="analysis-container"
+                    style="max-height:500px; overflow-y:auto; border-radius:12px; background:rgba(0,0,0,0.2);">
+                    <!-- Analysis Injected Here -->
+                </div>
+
+                <div style="text-align:center; margin-top:2rem;">
+                    <button onclick="window.location.reload()" class="nav-btn prev" style="width:100%;">Take Another
+                        Test</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Logic Script -->
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // UI Elements
+        const startBtn = document.getElementById('start-exam-btn');
+        const loginSection = document.getElementById('user-info');
+
+        // State
+        let examData = null;
+        let currentQuestionIndex = 0;
+        let userAnswers = {};
+        let timerInterval;
+
+        // Auth Listener
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                loginSection.style.display = 'flex';
+                document.getElementById('user-name').innerText = user.displayName || 'Learner';
+                document.getElementById('user-avatar').src = user.photoURL || 'data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22%23ffffff%22%3E%3Cpath%20d%3D%22M12%2012c2.21%200%204-1.79%204-4s-1.79-4-4-4-4%201.79-4%204%201.79%204%204%204zm0%202c-2.67%200-8%201.34-8%204v2h16v-2c0-2.66-5.33-4-8-4z%22%2F%3E%3C%2Fsvg%3E';
+            } else {
+                window.location.href = '/';
+            }
+        });
+
+        // Start Exam
+        startBtn.onclick = async () => {
+            document.getElementById('loading-exam').style.display = 'block';
+            startBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/generate-exam', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("Failed to generate exam");
+
+                examData = await response.json();
+
+                // Transition
+                document.getElementById('exam-start-screen').style.display = 'none';
+                document.getElementById('exam-interface').style.display = 'block';
+                document.getElementById('total-q-num').innerText = examData.questions.length;
+
+                renderQuestion(0);
+                startTimer(10 * 60);
+
+            } catch (e) {
+                alert("Error: " + e.message);
+                startBtn.disabled = false;
+                document.getElementById('loading-exam').style.display = 'none';
+            }
+        };
+
+        function startTimer(duration) {
+            let timer = duration, minutes, seconds;
+            const display = document.getElementById('exam-timer');
+            timerInterval = setInterval(function () {
+                minutes = parseInt(timer / 60, 10);
+                seconds = parseInt(timer % 60, 10);
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+                display.textContent = minutes + ":" + seconds;
+
+                if (--timer < 0) submitExam();
+            }, 1000);
+        }
+
+        function renderQuestion(index) {
+            currentQuestionIndex = index;
+            const q = examData.questions[index];
+            const container = document.getElementById('question-container');
+
+            document.getElementById('current-q-num').innerText = index + 1;
+
+            let html = `
+                <div style="margin-bottom:1.5rem;">
+                    <span style="background:rgba(59, 130, 246, 0.2); color:var(--accent-blue); padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600;">
+                        ${q.section}
+                    </span>
+                </div>
+                <h3>${q.question}</h3>
+                <div class="option-grid">
+            `;
+
+            // Options Logic
+            if (q.options) {
+                q.options.forEach((opt, optIndex) => {
+                    const isSelected = userAnswers[index] === opt ? 'selected' : '';
+                    html += `
+                        <div class="option-tile ${isSelected}" onclick="window.selectOption(${index}, ${optIndex})">
+                            <div class="option-marker">${String.fromCharCode(65 + optIndex)}</div>
+                            <div class="option-text">${opt}</div>
+                        </div>
+                    `;
+                });
+            }
+
+            html += `</div>`;
+            container.innerHTML = html;
+
+            // Nav Buttons
+            document.getElementById('prev-btn').disabled = index === 0;
+            if (index === examData.questions.length - 1) {
+                document.getElementById('next-btn').style.display = 'none';
+                document.getElementById('submit-btn').style.display = 'inline-block';
+            } else {
+                document.getElementById('next-btn').style.display = 'inline-block';
+                document.getElementById('submit-btn').style.display = 'none';
+            }
+        }
+
+        window.selectOption = (qIndex, optIndex) => {
+            const question = examData.questions[qIndex];
+            if (question && question.options) {
+                userAnswers[qIndex] = question.options[optIndex];
+                renderQuestion(qIndex);
+            }
+        };
+
+        document.getElementById('next-btn').onclick = () => renderQuestion(currentQuestionIndex + 1);
+        document.getElementById('prev-btn').onclick = () => renderQuestion(currentQuestionIndex - 1);
+        document.getElementById('submit-btn').onclick = submitExam;
+
+        function submitExam() {
+            clearInterval(timerInterval);
+            document.getElementById('exam-interface').style.display = 'none';
+            document.getElementById('results-screen').style.display = 'block';
+
+            let score = 0;
+            let analysisHtml = '';
+
+            examData.questions.forEach((q, index) => {
+                const userAns = userAnswers[index];
+                const isCorrect = userAns === q.correct_answer;
+                if (isCorrect) score++;
+
+                analysisHtml += `
+                    <div class="analysis-item ${isCorrect ? 'correct' : 'incorrect'}">
+                        <div style="font-weight:600; margin-bottom:0.5rem;">Q${index + 1}: ${q.question}</div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                            <span style="color:${isCorrect ? '#4ade80' : '#f87171'}">Your Ans: ${userAns || 'Skipped'}</span>
+                            <span style="color:#4ade80">Correct: ${q.correct_answer}</span>
+                        </div>
+                        <div class="explanation-box">${q.explanation}</div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('analysis-container').innerHTML = analysisHtml;
+        }
+
+    </script>
+</body>
+
+</html>

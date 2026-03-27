@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universe | Global News intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=4.8">
+    <style>
+        :root {
+            --universe-bg: #020617;
+            --accent-gold: #fbce04;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--universe-bg);
+            color: #fff;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .universe-hero {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            overflow: hidden;
+        }
+
+        .globe-bg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 800px;
+            height: 800px;
+            opacity: 0.15;
+            background-image: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80');
+            background-size: cover;
+            border-radius: 50%;
+            box-shadow: 0 0 100px rgba(59, 130, 246, 0.2);
+            animation: rotateGlobe 60s linear infinite;
+            z-index: 1;
+        }
+
+        @keyframes rotateGlobe {
+            from {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+
+            to {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+
+        .search-container {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 600px;
+            width: 90%;
+            transition: all 0.5s ease;
+        }
+
+        .search-container.results-active {
+            margin-top: 50px;
+            margin-bottom: 30px;
+            transform: translateY(-20vh);
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            letter-spacing: -1px;
+            background: linear-gradient(to bottom, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-box {
+            position: relative;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1.2rem 2rem;
+            font-size: 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            color: #fff;
+            outline: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 20px rgba(251, 206, 4, 0.2);
+        }
+
+        .search-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent-gold);
+            color: #000;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 0 15px var(--accent-gold);
+        }
+
+        .results-section {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            width: 95%;
+            margin: 0 auto;
+            display: none;
+            padding-bottom: 100px;
+        }
+
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 2.5rem;
+            padding: 2rem 0;
+            width: 100%;
+        }
+
+        .intel-card {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(251, 206, 4, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(12px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intel-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--accent-gold);
+            opacity: 0.3;
+            transition: opacity 0.3s;
+        }
+
+        .intel-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--accent-gold);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 20px rgba(251, 206, 4, 0.1);
+        }
+
+        .intel-card:hover::before {
+            opacity: 1;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-source {
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(251, 206, 4, 0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .impact-badge {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .card-headline {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            line-height: 1.3;
+            color: #fff;
+            margin: 0.5rem 0;
+        }
+
+        .card-summary {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.7;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .summary-item {
+            display: flex;
+            gap: 10px;
+        }
+
+        .summary-item::before {
+            content: '•';
+            color: var(--accent-gold);
+            font-weight: bold;
+        }
+
+        .impact-section {
+            margin-top: 1rem;
+            padding: 1.2rem;
+            background: rgba(251, 206, 4, 0.05);
+            border-left: 3px solid var(--accent-gold);
+            border-radius: 0 12px 12px 0;
+            font-size: 0.9rem;
+        }
+
+        .impact-label {
+            display: block;
+            color: var(--accent-gold);
+            font-weight: 800;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .card-meta {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin-top: 2rem;
+            color: var(--accent-gold);
+        }
+
+        .back-nav {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .back-nav:hover {
+            opacity: 1;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+                margin-top: 1rem;
+            }
+
+            .search-container {
+                margin-bottom: 2rem;
+            }
+
+            .search-input {
+                padding: 1rem 1.5rem;
+                font-size: 1rem;
+            }
+
+            .search-btn {
+                padding: 0.6rem 1.2rem;
+                font-size: 0.8rem;
+                right: 5px;
+            }
+
+            .news-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                padding: 1rem 0;
+            }
+
+            .intel-card {
+                padding: 1.5rem;
+            }
+
+            .card-headline {
+                font-size: 1.2rem;
+            }
+
+            .breaking-carousel {
+                height: 280px !important;
+            }
+
+            .breaking-overlay h2 {
+                font-size: 1.4rem !important;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .back-nav {
+                top: 10px;
+                left: 10px;
+                font-size: 0.8rem;
+            }
+
+            /* Better tap targets */
+            .intel-card:active {
+                transform: scale(0.98);
+                background: rgba(251, 206, 4, 0.05);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="/dashboard" class="back-nav">← Back to Dashboard</a>
+
+    <div class="universe-hero" id="hero">
+        <div class="globe-bg"></div>
+
+        <div class="search-container" id="search-container">
+            <h1>Global Intelligence Explorer</h1>
+            <p style="color: #94a3b8; margin-bottom: 2rem; font-size: 1.1rem;">Access real-time news analysis from the
+                world's major nodes.</p>
+            <div class="search-box">
+                <input type="text" class="search-input" id="country-input"
+                    placeholder="Which country news did you want?" autocomplete="off">
+                <button class="search-btn" id="search-btn">SCAN NODE</button>
+            </div>
+
+            <div class="loading-spinner" id="loader">
+                <div style="font-size: 1.2rem; font-weight: 600; letter-spacing: 2px;">SYNCHRONISING GLOBAL NODES...
+                </div>
+                <div id="loading-details" style="margin-top: 10px; font-size: 0.8rem; opacity: 0.6;">
+                    Initialising secure handshake... (0s)
+                </div>
+                <div style="margin-top: 5px; font-size: 0.7rem; color: var(--accent-gold); opacity: 0.8;">
+                    Nodes refresh automatically every 15 minutes.
+                </div>
+            </div>
+        </div>
+
+        <div class="results-section" id="results-section">
+            <!-- 1. BREAKING NEWS (Carousel) -->
+            <section class="breaking-container" id="breaking-section" style="display: none; margin-bottom: 4rem;">
+                <div class="breaking-header-row" style="margin-bottom: 1.5rem;">
+                    <div class="breaking-label" id="country-breaking-label">
+                        <span style="color:var(--accent-red);">●</span> Breaking Intelligence
+                    </div>
+                </div>
+                <div class="breaking-carousel" id="country-carousel"
+                    style="height: 350px; border-radius: 12px; overflow: hidden;">
+                    <!-- Slides injected by JS -->
+                </div>
+            </section>
+
+            <!-- 2. DIGITAL NEWSPAPER (Summary) -->
+            <section class="newspaper-brief" id="newspaper-section"
+                style="display: none; margin-bottom: 4rem; padding: 2rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-highlight); border-radius: 12px; text-align: center;">
+                <h3 style="color: var(--accent-gold); font-family: 'Outfit'; margin-bottom: 1rem; letter-spacing: 2px;">
+                    DAILY INTEL BRIEFING</h3>
+                <div id="newspaper-text"
+                    style="font-size: 1.2rem; line-height: 1.6; color: var(--text-primary); font-family: 'Inter'; font-style: italic; max-width: 800px; margin: 0 auto;">
+                    Synthesizing node data...
+                </div>
+            </section>
+
+            <!-- 3. TOP INTELLIGENCE (Grid) -->
+            <section class="top-headlines" id="headlines-section" style="display: none; margin-bottom: 4rem;">
+                <h2 class="section-title" style="margin-bottom: 2rem;">Strategic Intelligence</h2>
+                <div class="news-grid" id="news-grid">
+                    <!-- Cards injected here -->
+                </div>
+            </section>
+
+            <!-- 4. VIDEO INTEL (Scroll) -->
+            <section class="trending-india" id="video-section" style="display: none; margin-bottom: 4rem;">
+                <h2 class="section-title" style="margin-bottom: 1.5rem;">Video Reports</h2>
+                <div class="trending-grid" id="video-grid"
+                    style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));">
+                    <!-- Videos injected by JS -->
+                </div>
+            </section>
+
+            <!-- 5. REGIONAL PUBLICATIONS (New) -->
+            <section class="newspapers-bottom" id="newspaper-shelf-section" style="display: none; margin-bottom: 4rem;">
+                <h2 class="section-title" style="margin-bottom: 1.5rem;">Regional Publications</h2>
+                <div class="paper-shelf" id="newspaper-shelf"
+                    style="display: flex; gap: 20px; overflow-x: auto; padding-bottom: 20px; -ms-overflow-style: none; scrollbar-width: none;">
+                    <!-- Papers injected by JS -->
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const input = document.getElementById('country-input');
+        const btn = document.getElementById('search-btn');
+        const loader = document.getElementById('loader');
+        const results = document.getElementById('results-section');
+        const searchContainer = document.getElementById('search-container');
+        const hero = document.getElementById('hero');
+
+        const newsGrid = document.getElementById('news-grid');
+        const videoGrid = document.getElementById('video-grid');
+        const carousel = document.getElementById('country-carousel');
+        const newspaperText = document.getElementById('newspaper-text');
+        const paperShelf = document.getElementById('newspaper-shelf');
+
+        const bSection = document.getElementById('breaking-section');
+        const nSection = document.getElementById('newspaper-section');
+        const hSection = document.getElementById('headlines-section');
+        const vSection = document.getElementById('video-section');
+        const pSection = document.getElementById('newspaper-shelf-section');
+
+        async function performSearch() {
+            const country = input.value.trim();
+            if (!country) return;
+
+            // UI Reset
+            loader.style.display = 'block';
+            const loadingDetails = document.getElementById('loading-details');
+            let seconds = 0;
+            if (window.loadingInterval) clearInterval(window.loadingInterval);
+            window.loadingInterval = setInterval(() => {
+                seconds++;
+                loadingDetails.innerText = `Establishing neural links... (${seconds}s)`;
+            }, 1000);
+
+            btn.disabled = true;
+            newsGrid.innerHTML = '';
+            videoGrid.innerHTML = '';
+            carousel.innerHTML = '';
+            paperShelf.innerHTML = '';
+
+            bSection.style.display = 'none';
+            nSection.style.display = 'none';
+            hSection.style.display = 'none';
+            vSection.style.display = 'none';
+            pSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/universe/news', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ country })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success' && data.news) {
+                    const news = data.news;
+                    searchContainer.classList.add('results-active');
+                    hero.style.height = 'auto';
+                    hero.style.minHeight = '100vh';
+                    results.style.display = 'block';
+
+                    // 1. Digital Newspaper
+                    if (news.newspaper_summary) {
+                        nSection.style.display = 'block';
+                        newspaperText.textContent = news.newspaper_summary;
+                    }
+
+                    // 2. Breaking News Carousel
+                    if (news.breaking_news && news.breaking_news.length > 0) {
+                        bSection.style.display = 'block';
+                        news.breaking_news.forEach((item, index) => {
+                            const slide = document.createElement('div');
+                            slide.className = `breaking-slide ${index === 0 ? 'active' : ''}`;
+                            const img = item.image_url || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1200&q=80';
+                            slide.innerHTML = `
+                                <div class="breaking-slide-bg" style="background: url('${img}') no-repeat center/cover; height: 100%; width: 100%;"></div>
+                                <div class="breaking-overlay" style="padding: 2rem;">
+                                    <div class="breaking-tag">TOP PRIORITY</div>
+                                    <h2 style="font-size: 1.8rem; margin: 1rem 0;">${item.news_headline}</h2>
+                                    <div class="breaking-meta">
+                                        <span>${item.source_name}</span>
+                                        <span style="color:var(--accent-gold)">IMPACT: ${item.impact_score}/10</span>
+                                    </div>
+                                </div>
+                            `;
+                            slide.onclick = () => window.open(item.url, '_blank');
+                            carousel.appendChild(slide);
+                        });
+                        startCarousel();
+                    }
+
+                    // 3. Strategic Intelligence (Top Stories)
+                    if (news.top_stories && news.top_stories.length > 0) {
+                        hSection.style.display = 'block';
+                        news.top_stories.forEach(item => {
+                            const card = document.createElement('div');
+                            card.className = 'intel-card fade-in';
+                            card.onclick = () => window.open(item.url, '_blank');
+
+                            const impactColor = item.impact_score > 7 ? '#ef4444' : (item.impact_score > 4 ? '#f59e0b' : '#10b981');
+
+                            card.innerHTML = `
+                                <div class="card-header">
+                                    <div class="card-source">${item.source_name}</div>
+                                    <div class="impact-badge" style="border: 1px solid ${impactColor}; color: ${impactColor}">
+                                        BIAS: ${item.bias_rating}
+                                    </div>
+                                </div>
+                                <div class="card-headline">${item.news_headline}</div>
+                                <div class="card-summary">
+                                    ${item.intelligence_summary.map(s => `<div class="summary-item">${s}</div>`).join('')}
+                                </div>
+                                <div class="impact-section">
+                                    <span class="impact-label">Geopolitical Impact on ${country}</span>
+                                    ${item["why_it_matters_to_" + country] || item.why_it_matters || "Analyzing strategic implications..."}
+                                </div>
+                                <div class="card-meta">
+                                    <span>Impact Score: <span style="color: ${impactColor}">${item.impact_score}/10</span></span>
+                                    <span>Scan Date: 2026-02-21</span>
+                                </div>
+                            `;
+                            newsGrid.appendChild(card);
+                        });
+                    }
+
+                    // 4. Videos
+                    if (news.videos && news.videos.length > 0) {
+                        vSection.style.display = 'block';
+                        news.videos.forEach(vid => {
+                            const vCard = document.createElement('div');
+                            vCard.className = 'trend-card';
+                            vCard.style.padding = '0';
+                            vCard.style.overflow = 'hidden';
+                            vCard.innerHTML = `
+                                <div style="position: relative; height: 160px;">
+                                    <img src="${vid.image_url}" style="width: 100%; height: 100%; object-fit: cover;">
+                                    <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">${vid.duration}</div>
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 1px solid white;">
+                                        <span style="color: white; font-size: 1.2rem;">▶</span>
+                                    </div>
+                                </div>
+                                <div style="padding: 1rem;">
+                                    <div style="font-size: 0.6rem; color: var(--accent-gold); font-weight: 700; text-transform: uppercase; margin-bottom: 0.5rem;">${vid.source}</div>
+                                    <h4 style="font-size: 0.9rem; color: white; line-height: 1.4; margin: 0;">${vid.title}</h4>
+                                </div>
+                            `;
+                            vCard.onclick = () => window.open(vid.url, '_blank');
+                            videoGrid.appendChild(vCard);
+                        });
+                    }
+
+                    // 5. Regional Newspapers
+                    if (news.newspapers && news.newspapers.length > 0) {
+                        pSection.style.display = 'block';
+                        news.newspapers.forEach(paper => {
+                            const pItem = document.createElement('div');
+                            pItem.className = 'paper-item';
+                            pItem.style.background = paper.color || '#333';
+                            pItem.style.minWidth = '140px';
+                            pItem.style.height = '180px';
+                            pItem.style.borderRadius = '4px 12px 12px 4px';
+                            pItem.style.padding = '1.5rem 1rem';
+                            pItem.style.display = 'flex';
+                            pItem.style.flexDirection = 'column';
+                            pItem.style.justifyContent = 'space-between';
+                            pItem.style.alignItems = 'center';
+                            pItem.style.cursor = 'pointer';
+                            pItem.style.boxShadow = '5px 5px 15px rgba(0,0,0,0.4)';
+                            pItem.style.transition = 'all 0.3s ease';
+                            pItem.style.borderLeft = '1px solid rgba(255,255,255,0.2)';
+
+                            pItem.innerHTML = `
+                                <div style="font-size: 0.75rem; font-weight: 900; color: white; text-align: center; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2;">${paper.name}</div>
+                                <div style="height: 2px; width: 30px; background: rgba(255,255,255,0.5);"></div>
+                                <div style="font-size: 0.6rem; color: rgba(255,255,255,0.7); font-weight: 600;">DAILY EDITION</div>
+                            `;
+                            pItem.onmouseenter = () => {
+                                pItem.style.transform = 'translateY(-10px) rotate(-2deg)';
+                                pItem.style.boxShadow = '10px 15px 25px rgba(0,0,0,0.5)';
+                            };
+                            pItem.onmouseleave = () => {
+                                pItem.style.transform = 'translateY(0) rotate(0deg)';
+                                pItem.style.boxShadow = '5px 5px 15px rgba(0,0,0,0.4)';
+                            };
+                            pItem.onclick = () => window.open(paper.url, '_blank');
+                            paperShelf.appendChild(pItem);
+                        });
+                    }
+
+                } else {
+                    alert("No specific intelligence found for this node. Ensure the country name is correct.");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Global Node Sync Failed. Please try again later.");
+            } finally {
+                loader.style.display = 'none';
+                if (window.loadingInterval) clearInterval(window.loadingInterval);
+                btn.disabled = false;
+            }
+        }
+
+        function startCarousel() {
+            let current = 0;
+            const slides = document.querySelectorAll('.breaking-slide');
+            if (slides.length <= 1) return;
+
+            if (window.carouselInterval) clearInterval(window.carouselInterval);
+
+            const nextSlide = () => {
+                slides[current].classList.remove('active');
+                current = (current + 1) % slides.length;
+                slides[current].classList.add('active');
+            };
+
+            const prevSlide = () => {
+                slides[current].classList.remove('active');
+                current = (current - 1 + slides.length) % slides.length;
+                slides[current].classList.add('active');
+            };
+
+            window.carouselInterval = setInterval(nextSlide, 5000);
+
+            // Basic Touch Support
+            let touchStartX = 0;
+            carousel.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                if (window.carouselInterval) clearInterval(window.carouselInterval);
+            }, { passive: true });
+
+            carousel.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                if (touchStartX - touchEndX > 50) {
+                    nextSlide();
+                } else if (touchEndX - touchStartX > 50) {
+                    prevSlide();
+                }
+                window.carouselInterval = setInterval(nextSlide, 5000);
+            }, { passive: true });
+        }
+
+        btn.onclick = performSearch;
+        input.onkeypress = (e) => { if (e.key === 'Enter') performSearch(); };
+    </script>
+</body>
+
+</html>
