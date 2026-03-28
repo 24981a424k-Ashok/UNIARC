@@ -211,6 +211,29 @@
         }
 
         /* Mobile Nav Styles */
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border-highlight);
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 100002;
+        }
+        .mobile-menu-btn span {
+            display: block;
+            width: 20px;
+            height: 2px;
+            background: white;
+            transition: all 0.3s;
+        }
+        @media (max-width: 992px) {
+            .mobile-menu-btn { display: flex; }
+            .nav-center { display: none; }
+        }
+
         .mobile-nav-overlay {
             position: fixed;
             top: 0;
@@ -252,10 +275,31 @@
         }
         .mobile-nav-close {
             align-self: flex-end;
-            font-size: 2rem;
+            font-size: 2.5rem;
             cursor: pointer;
             color: white;
             line-height: 1;
+            margin-bottom: 20px;
+        }
+
+        /* Fixed Sidebar Ad Positioning */
+        .fixed-sidebar {
+            position: fixed;
+            top: 100px;
+            width: 160px;
+            height: calc(100vh - 120px);
+            z-index: 90;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-highlight);
+            padding: 10px;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .fixed-sidebar.left { left: 20px; }
+        .fixed-sidebar.right { right: 20px; }
+        @media (max-width: 1400px) {
+            .fixed-sidebar { display: none !important; }
         }
     </style>
     <!-- Firebase SDKs -->
@@ -1685,6 +1729,44 @@
     {% endif %}
 
     <script>
+        function shareArticle(event, id, title) {
+            if (event) event.stopPropagation();
+            const url = `${window.location.origin}/dashboard?article_id=${id}`;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Intelligence Report: ' + title,
+                    url: url
+                }).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(url);
+                alert('Intelligence link copied to clipboard.');
+            }
+        }
+
+        async function requestUpdate(event, id) {
+            if (event) event.stopPropagation();
+            const btn = event.currentTarget;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid white; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/articles/${id}/update`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    btn.style.background = 'var(--accent-green)';
+                    btn.innerHTML = '✓ Updated';
+                    setTimeout(() => { window.location.reload(); }, 1500);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (err) {
+                btn.style.background = 'var(--accent-red)';
+                btn.innerHTML = 'Error';
+                setTimeout(() => { btn.innerHTML = originalContent; btn.disabled = false; btn.style.background = ''; }, 2000);
+            }
+        }
+
         function toggleMobileMenu() {
             const overlay = document.getElementById('mobile-nav-overlay');
             const mask = document.getElementById('nav-mask');

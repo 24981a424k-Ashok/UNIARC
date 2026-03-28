@@ -122,12 +122,15 @@ class User(Base):
     phone = Column(String, nullable=True)
     push_token = Column(String, nullable=True)
     bounty_points = Column(Integer, default=0)
+    preferred_language = Column(String, default="english")
     created_at = Column(DateTime, default=datetime.utcnow)
     
     subscriptions = relationship("Subscription", back_populates="user")
     folders = relationship("Folder", back_populates="user")
     saved_articles = relationship("SavedArticle", back_populates="user")
     read_history = relationship("ReadHistory", back_populates="user")
+    current_streak = Column(Integer, default=0)
+    last_active_date = Column(DateTime, nullable=True)
 
 class Subscription(Base):
     __tablename__ = "subscriptions"

@@ -977,20 +977,35 @@ async def login(payload: LoginRequest, db: Session = Depends(get_db)):
     # Upsert User
     user = db.query(User).filter(User.firebase_uid == uid).first()
     needs_language = False
+    
     if not user:
-        user = User(firebase_uid=uid, email=email, phone=phone)
+        user = User(firebase_uid=uid, email=email, phone=phone, preferred_language="english")
         db.add(user)
         needs_language = True
     else:
         # Update email/phone if they changed/populated
         if email: user.email = email
         if phone: user.phone = phone
-        if not user.preferred_language:
+        
+        # Check if user has preferred_language, handle safely for old records
+        try:
+            if not user.preferred_language:
+                needs_language = True
+        except AttributeError:
+            # Fallback if DB column is missing or not yet reflective
             needs_language = True
             
     db.commit()
+    db.refresh(user)
     
-    pref_lang = user.preferred_language if user.preferred_language else "english"
+    # Safe access to preferred_language
+    pref_lang = "english"
+    try:
+        if user.preferred_language:
+            pref_lang = user.preferred_language
+    except AttributeError:
+        pass
+        
     return {"status": "success", "uid": uid, "needs_language": needs_language, "preferred_language": pref_lang}
 
 class LanguageRequest(BaseModel):
@@ -1294,10 +1309,10 @@ async def _try_groq_translate(stories: list, lang: str, node_title: str) -> dict
     if client:
         try:
             logger.info(f"Using Groq {key_info} for translation to {lang}")
-            # CLEANED GROQ CALL - NO EXTRA PARAMS
+            # CLEANED GROQ CALL - Consistent Schema
             model = "llama-3.3-70b-versatile"
-            system_prompt = f"Translate the following JSON list of stories to {lang}."
-            user_prompt = f"Follow this schema exactly: {{'translated_stories': [...]}}. Stories: {json.dumps(stories)}"
+            system_prompt = f"You are a professional news translator. Translate the following JSON list of stories to {lang}. Return ONLY valid JSON."
+            user_prompt = f"Follow this schema exactly: {{'items': [...]}}. Each item must match the input keys exactly. Stories: {json.dumps(input_obj['items'])}"
             response = await asyncio.wait_for(
                 client.chat.completions.create(
                     model=model,
@@ -1305,8 +1320,8 @@ async def _try_groq_translate(stories: list, lang: str, node_title: str) -> dict
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt}
                     ],
-                    temperature=0.3,
-                    response_format={"type": "json_object"} if "llama" in model.lower() else None
+                    temperature=0.1,
+                    response_format={"type": "json_object"}
                 ),
                 timeout=30
             )

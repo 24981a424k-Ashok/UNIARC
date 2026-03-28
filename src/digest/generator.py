@@ -161,9 +161,14 @@ class DigestGenerator:
                 "generated_at": datetime.utcnow().isoformat()
             }
 
-        # Ranking logic
+        # Ranking logic: Manual articles (score 100) ALWAYS come first.
         def calculate_rank_score(n):
-            score = (n.impact_score or 5) + (n.credibility_score or 0.5) * 2
+            base_score = n.impact_score or 5
+            # Manual articles get a massive boost to stay at the absolute top
+            if base_score >= 100:
+                return 1000 + base_score 
+            
+            score = base_score + (n.credibility_score or 0.5) * 2
             if n.published_at:
                 age = (datetime.utcnow() - n.published_at).total_seconds() / 3600
                 if age < 4: score += 5
