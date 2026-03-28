@@ -310,6 +310,11 @@ async def dashboard(request: Request, category: str = None, country: str = None,
         all_ads = db.query(Advertisement).filter(
             or_(Advertisement.target_platform == "main", Advertisement.target_platform == "both")
         ).order_by(Advertisement.created_at.desc()).limit(30).all()
+
+        # Final fallback: if main ads are empty, try fetching anything
+        if not all_ads:
+            all_ads = db.query(Advertisement).order_by(Advertisement.created_at.desc()).limit(10).all()
+
         # Ensure position field exists (fallback for old records)
         for ad in all_ads:
             if not hasattr(ad, 'position') or not ad.position:
@@ -1953,7 +1958,8 @@ def _update_student_cache_if_needed(db: Session, force: bool = False, country: s
         is_student_cat = article.category in student_categories
         has_keywords = any(kw in combined for kw in student_keywords)
         
-        if not (is_student_cat or has_keywords):
+        # Check if it's a student-focused category OR has student keywords OR is a Global (manual) article
+        if not (is_student_cat or has_keywords or article.country == "Global"):
             continue
             
         # If explicitly categorized, use that directly

@@ -853,4 +853,60 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTicker();
     initializeWeather();
     if (window.initializeSeeMore) window.initializeSeeMore();
+
+    // Click outside to close language menu
+    document.addEventListener('click', (e) => {
+        const langSwitcher = document.getElementById('global-lang-switcher');
+        const searchInput = document.getElementById('header-lang-search');
+        if (langSwitcher && !langSwitcher.contains(e.target)) {
+            langSwitcher.classList.remove('active');
+            if (searchInput) searchInput.value = '';
+            filterHeaderLanguages();
+        }
+    });
+
+    // Mobile nav overlay click outside
+    document.addEventListener('click', (e) => {
+        const mobileMenu = document.getElementById('mobile-nav-overlay');
+        const trigger = document.getElementById('mobile-nav-trigger');
+        if (mobileMenu && trigger && !mobileMenu.contains(e.target) && !trigger.contains(e.target)) {
+            mobileMenu.classList.remove('active');
+        }
+    });
 });
+
+window.toggleHeaderLangMenu = function() {
+    const switcher = document.getElementById('global-lang-switcher');
+    if (switcher) switcher.classList.toggle('active');
+};
+
+window.filterHeaderLanguages = function() {
+    const input = document.getElementById('header-lang-search');
+    const filter = input ? input.value.toLowerCase() : '';
+    const menuList = document.getElementById('header-lang-list');
+    if (!menuList) return;
+    const items = menuList.getElementsByTagName('a');
+    for (let i = 0; i < items.length; i++) {
+        const txtValue = items[i].getAttribute('data-name');
+        if (txtValue && txtValue.indexOf(filter) > -1) {
+            items[i].style.display = "";
+        } else {
+            items[i].style.display = "none";
+        }
+    }
+};
+
+window.changeLang = function(langStr) {
+    const url = new URL(window.location.href);
+    if (langStr && langStr !== 'english') {
+        url.searchParams.set('lang', langStr);
+    } else {
+        url.searchParams.delete('lang');
+    }
+    window.location.href = url.toString();
+};
+
+window.toggleMobileMenu = function() {
+    const nav = document.getElementById('mobile-nav-overlay');
+    if (nav) nav.classList.toggle('active');
+};
