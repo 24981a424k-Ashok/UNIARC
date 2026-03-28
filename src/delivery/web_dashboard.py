@@ -1522,7 +1522,7 @@ async def get_all_articles(category: str = None, country: str = None, db: Sessio
             
         # LIFO: Impact score first (manual priority), then newest first
         articles = query.order_by(VerifiedNews.impact_score.desc(), VerifiedNews.created_at.desc()).limit(500).all()
-        return {"articles": [a.to_dict() for a in articles]}
+        return [a.to_dict() for a in articles]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

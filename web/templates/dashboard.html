@@ -630,7 +630,7 @@
         </nav>
 
             <!-- Unified Mobile Menu Button (Hamburger) -->
-            <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileMenu()">
+            <button id="mobile-menu-btn" class="mobile-menu-btn" onclick="toggleMobileMenu()" style="order: 2; margin-left: 10px;">
                 <span></span>
                 <span></span>
                 <span></span>
@@ -638,7 +638,7 @@
 
             <!-- Searchable Language Selection -->
             <div id="global-lang-switcher" class="nav-item"
-                style="display:flex; align-items:center; gap:0.4rem; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-highlight); backdrop-filter: blur(5px); position: relative;">
+                style="display:flex; align-items:center; gap:0.4rem; background: rgba(0,0,0,0.3); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-highlight); backdrop-filter: blur(5px); position: relative; order: 1; margin: 0 auto;">
                 <span style="font-size: 0.8rem;">🌐</span>
                 <span id="current-lang-display" style="color: #FFFFFF; font-size:0.8rem; cursor:pointer; font-weight: 700; text-transform: uppercase;" onclick="toggleHeaderLangMenu()">
                     {% if selected_lang == 'english' or not selected_lang %}EN{% elif selected_lang == 'Telugu' %}TE{% elif selected_lang == 'Hindi' %}HI{% elif selected_lang == 'Tamil' %}TA{% elif selected_lang == 'Kannada' %}KA{% elif selected_lang == 'Malayalam' %}ML{% elif selected_lang == 'Bengali' %}BN{% elif selected_lang == 'Marathi' %}MR{% elif selected_lang == 'Gujarati' %}GU{% elif selected_lang == 'Punjabi' %}PA{% elif selected_lang == 'Odia' %}OR{% elif selected_lang == 'Urdu' %}UR{% elif selected_lang == 'Spanish' %}ES{% elif selected_lang == 'Arabic' %}AR{% elif selected_lang == 'Japanese' %}JP{% elif selected_lang == 'French' %}FR{% elif selected_lang == 'Chinese' %}ZH{% elif selected_lang == 'German' %}DE{% elif selected_lang == 'Portuguese' %}PT{% elif selected_lang == 'Russian' %}RU{% elif selected_lang == 'Korean' %}KO{% elif selected_lang == 'Turkish' %}TR{% elif selected_lang == 'Indonesian' %}ID{% elif selected_lang == 'Vietnamese' %}VI{% elif selected_lang == 'Italian' %}IT{% else %}EN{% endif %}
@@ -660,7 +660,7 @@
                 </div>
             </div>
 
-            <div class="profile-container" id="profile-trigger" style="border:none; padding:0;">
+            <div class="profile-container" id="profile-trigger" style="border:none; padding:0; order: 3; margin-left: 10px;">
                 <div class="user-avatar-small">
                     <img id="user-avatar-img" src="https://ui-avatars.com/api/?background=random&color=fff&name=User"
                         alt="User">
@@ -1564,6 +1564,13 @@
     <div class="nav-mask" id="nav-mask" onclick="toggleMobileMenu()"></div>
     <div class="mobile-nav-overlay" id="mobile-nav-overlay">
         <div class="mobile-nav-close" onclick="toggleMobileMenu()">×</div>
+        <style>
+        .fixed-sidebar { position: fixed; top: 120px; width: 140px; z-index: 100; transition: all 0.3s; }
+        .fixed-sidebar.left { left: 20px; }
+        .fixed-sidebar.right { right: 20px; }
+        .sidebar-close { position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+        @media (max-width: 1024px) { .fixed-sidebar { display: none; } }
+        </style>
         <a href="/dashboard" class="mobile-nav-link">🏠 Home</a>
         <a href="/saved" class="mobile-nav-link">🔖 Saved</a>
         <a href="/universe" class="mobile-nav-link">🌌 Universe</a>
