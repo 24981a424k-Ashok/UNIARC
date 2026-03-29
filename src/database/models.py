@@ -230,6 +230,17 @@ class Newspaper(Base):
     logo_color = Column(String, nullable=True) # e.g. "#000000"
     country = Column(String, default="Global")
     created_at = Column(DateTime, default=datetime.utcnow)
+
+class ProtocolHistory(Base):
+    __tablename__ = "protocol_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    action = Column(String, nullable=False) # e.g. 'deploy', 'delete', 'register'
+    target_type = Column(String, nullable=False) # e.g. 'article', 'source', 'ad'
+    target_id = Column(String, nullable=True)
+    admin_user = Column(String, nullable=False)
+    details = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
     
 if DATABASE_URL.startswith("sqlite"):
     engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})

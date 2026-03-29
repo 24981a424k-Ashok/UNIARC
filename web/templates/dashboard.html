@@ -285,21 +285,59 @@
         /* Fixed Sidebar Ad Positioning */
         .fixed-sidebar {
             position: fixed;
-            top: 100px;
-            width: 160px;
-            height: calc(100vh - 120px);
-            z-index: 90;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(10px);
+            top: 120px;
+            width: 180px;
+            height: calc(100vh - 140px);
+            z-index: 100;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
             border: 1px solid var(--border-highlight);
-            padding: 10px;
-            border-radius: 12px;
+            padding: 15px;
+            border-radius: 16px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            scrollbar-width: none;
         }
-        .fixed-sidebar.left { left: 20px; }
-        .fixed-sidebar.right { right: 20px; }
+        .fixed-sidebar::-webkit-scrollbar { display: none; }
+        .fixed-sidebar.left { left: 30px; }
+        .fixed-sidebar.right { right: 30px; }
         @media (max-width: 1400px) {
             .fixed-sidebar { display: none !important; }
+        }
+
+        /* MOBILE NAV ENHANCEMENT */
+        .mobile-nav-group {
+            margin-bottom: 2rem;
+            display: block !important;
+        }
+        .mobile-nav-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--accent-gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 0.5rem;
+        }
+        .mobile-category-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .mobile-cat-link {
+            padding: 10px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        .mobile-cat-link:hover {
+            background: var(--accent-blue);
+            color: white;
         }
     </style>
     <!-- Firebase SDKs -->

@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
-from src.database.models import SessionLocal, DailyDigest, User, VerifiedNews, Subscription, Advertisement, Newspaper, RawNews
+from src.database.models import SessionLocal, DailyDigest, User, VerifiedNews, Subscription, Advertisement, Newspaper, RawNews, ProtocolHistory
 from src.config import settings
 from src.config.firebase_config import verify_token
 from src.analysis.chat_engine import NewsChatEngine
@@ -144,6 +144,23 @@ def normalize_article_data(data: dict):
     data["content"] = f"### {data.get('title', 'Intelligence report')}\n\n**Summary:**\n{bullets_text}\n\n**Why It Matters:**\n{data.get(why_key, '')}\n\n**Who is Affected:**\n{data.get(who_key, '')}\n\n**Extra Context:**\n{data.get('extra_stuff', '')}\n\n**What Happens Next:**\n{data.get('what_happens_next', '')}\n\n---\n*Source: {data.get('official_url') or data.get('url') or 'Global Intel'}*"
     
     return data
+
+def log_protocol_action(db: Session, action: str, target_type: str, target_id: str = None, admin_user: str = "Admin", details: str = None):
+    """Helper to record administrative actions for protocol history."""
+    try:
+        new_log = ProtocolHistory(
+            action=action,
+            target_type=target_type,
+            target_id=str(target_id) if target_id else None,
+            admin_user=admin_user,
+            details=details,
+            timestamp=datetime.utcnow()
+        )
+        db.add(new_log)
+        db.commit()
+    except Exception as e:
+        logger.error(f"Failed to log protocol action: {e}")
+        db.rollback()
 
 FALLBACK_IMAGES = [
     "https://images.unsplash.com/photo-1504711434969-e33886168f5c?q=80&w=1000",
@@ -621,8 +638,8 @@ async def dashboard(request: Request, category: str = None, country: str = None,
             "left_ads": left_ads,
             "right_ads": right_ads,
             "mobile_ads": mobile_ads,
-            "papers": unique_papers, # Use deduplicated papers for the dropdown
-            "categories": categories, # Added dynamic categories
+            "papers": papers, # FIXED: Pass all papers to ensure registered sources show up
+            "categories": categories, 
             "vapid_public_key": settings.VAPID_PUBLIC_KEY,
             "selected_category": category,
             "selected_country": country,
@@ -1594,9 +1611,23 @@ async def create_ad(payload: AdCreateRequest, db: Session = Depends(get_db)):
         db.add(new_ad)
         db.commit()
         db.refresh(new_ad)
+        
+        # Log Action
+        log_protocol_action(db, "deploy", "ad", new_ad.id, details=f"Deployed new campaign node: {payload.caption}")
+        
         return {"success": True, "ad": new_ad}
     except Exception as e:
         db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/api/history")
+async def get_protocol_history(db: Session = Depends(get_db)):
+    """Fetch recent administrative action logs."""
+    try:
+        from src.database.models import ProtocolHistory
+        history = db.query(ProtocolHistory).order_by(ProtocolHistory.timestamp.desc()).limit(100).all()
+        return history
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/api/ads/{ad_id}")
@@ -1609,7 +1640,12 @@ async def delete_ad(ad_id: int, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Ad not found")
         db.delete(ad)
         db.commit()
+        
+        # Log Action
+        log_protocol_action(db, "delete", "ad", ad_id, details=f"Removed campaign node: {ad.caption}")
+        
         return {"success": True}
+        
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
@@ -1646,6 +1682,10 @@ async def create_newspaper(payload: NewspaperCreateRequest, db: Session = Depend
         db.add(new_paper)
         db.commit()
         db.refresh(new_paper)
+        
+        # Log Action
+        log_protocol_action(db, "register", "source", new_paper.id, details=f"Initialized source node: {payload.name} ({payload.country})")
+        
         return {"success": True, "paper": new_paper}
     except Exception as e:
         db.rollback()
@@ -1661,6 +1701,10 @@ async def delete_newspaper(paper_id: int, db: Session = Depends(get_db)):
             raise HTTPException(status_code=404, detail="Newspaper not found")
         db.delete(paper)
         db.commit()
+        
+        # Log Action
+        log_protocol_action(db, "delete", "source", paper_id, details=f"Unregistered source node: {paper.name}")
+        
         return {"success": True}
     except Exception as e:
         db.rollback()
@@ -1751,6 +1795,9 @@ async def create_manual_student_article(payload: ManualStudentArticleRequest, db
         db.commit()
         db.refresh(verified)
         
+        # Log Action
+        log_protocol_action(db, "deploy", "student_article", verified.id, details=f"Deployed manual student article: {payload.title}")
+        
         # 4. Clear cache
         _student_news_caches.clear()
         
@@ -1799,6 +1846,10 @@ async def update_article(article_id: int, payload: ManualStudentArticleRequest, 
             article.raw_news.url_to_image = payload.image_url
 
         db.commit()
+        
+        # Log Action
+        log_protocol_action(db, "update", "article", article_id, details=f"Updated intelligence node: {payload.title}")
+        
         _student_news_caches.clear()
         return {"success": True, "article": article.to_dict()}
     except HTTPException: raise
@@ -1818,6 +1869,10 @@ async def delete_article(article_id: int, db: Session = Depends(get_db)):
         
         db.delete(article)
         db.commit()
+        
+        # Log Action
+        log_protocol_action(db, "delete", "article", article_id, details=f"Removed intelligence node: {article.title}")
+        
         _student_news_caches.clear()
         return {"success": True}
     except Exception as e:
