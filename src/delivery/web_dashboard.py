@@ -1736,6 +1736,7 @@ async def create_manual_student_article(payload: ManualStudentArticleRequest, db
             verified.content = payload.description
             verified.category = payload.category
             verified.impact_score = 100
+            verified.published_at = datetime.utcnow() # Final sync to ensure it stays in FIRST PLACE
             verified.why_it_matters = payload.description[:200]
             
             # Update access link in analysis blob
