@@ -394,11 +394,11 @@
         }
 
         /* Sidebar & Modal Styles from Dashboard */
-        .fixed-sidebar { position: fixed; top: 120px; width: 140px; z-index: 100; transition: all 0.3s; }
+        .fixed-sidebar { position: fixed; top: 160px; width: 140px; z-index: 100; transition: all 0.3s; }
         .fixed-sidebar.left { left: 20px; }
         .fixed-sidebar.right { right: 20px; }
         .sidebar-close { position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-red); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
-        @media (max-width: 1600px) { .fixed-sidebar { display: none; } }
+        @media (max-width: 1300px) { .fixed-sidebar { display: none; } }
         
         .ad-container-slider { position: relative; overflow: hidden; height: 100%; }
         .ad-slide { 
@@ -568,6 +568,7 @@
 
             <main>
                 <!-- Featured Portals Section -->
+                {% if not current_category or current_category == 'Scholarships & Internships' or current_category == 'All' %}
                 <section class="featured-portals" style="margin-bottom: 3rem;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; border-bottom:1px solid var(--border-color); padding-bottom:0.75rem;">
                         <h2 style="font-size:1.5rem; font-weight:800; color:var(--accent-gold); margin:0;">💎 Global & National Premium Portals</h2>
@@ -701,6 +702,7 @@
                         </div>
                     </div>
                 </section>
+                {% endif %}
 
                 {% if not articles %}
                 <div
@@ -886,6 +888,14 @@
         <hr style="border: none; border-top: 1px solid var(--border-color); width: 100%;">
         <a href="/history" class="mobile-nav-link">📖 History</a>
         <a href="/dashboard#newspaper-section" class="mobile-nav-link">📰 Newspaper</a>
+        <div style="padding: 1rem; background: rgba(0,0,0,0.2); margin-top: 1rem; border-radius: 12px;">
+            <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 1px;">CATEGORIES</span>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+                {% for cat in categories %}
+                <a href="/student-news?category={{ cat|urlencode }}" class="mobile-nav-link" style="font-size: 0.85rem; padding: 0.4rem 0;">• {{ cat }}</a>
+                {% endfor %}
+            </div>
+        </div>
     </div>
 
     <script>

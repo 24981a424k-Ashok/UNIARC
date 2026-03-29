@@ -1541,7 +1541,7 @@ async def get_all_articles(category: str = None, country: str = None, db: Sessio
             query = query.filter(VerifiedNews.country == country)
             
         # LIFO: Impact score first (manual priority), then newest first
-        articles = query.order_by(VerifiedNews.impact_score.desc(), VerifiedNews.created_at.desc()).limit(500).all()
+        articles = query.order_by(VerifiedNews.impact_score.desc(), VerifiedNews.created_at.desc()).all()
         return [a.to_dict() for a in articles]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -1704,9 +1704,14 @@ async def create_manual_student_article(payload: ManualStudentArticleRequest, db
             title=payload.title,
             content=payload.description,
             summary_bullets=[payload.description[:100] + "..."],
+            impact_tags=[payload.category],
+            bias_rating="Neutral",
             category=payload.category,
             country="Global",
+            credibility_score=1.0,
             impact_score=100, # MAX PRIORITY
+            why_it_matters=payload.description[:200],
+            sentiment="Neutral",
             is_verified=True,
             analysis={"access_link": payload.access_link},
             published_at=datetime.utcnow()
