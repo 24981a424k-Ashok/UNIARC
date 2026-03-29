@@ -1678,55 +1678,86 @@ class ManualStudentArticleRequest(BaseModel):
 
 @router.post("/api/student/articles")
 async def create_manual_student_article(payload: ManualStudentArticleRequest, db: Session = Depends(get_db)):
-    """Admin endpoint to add manual student portal articles."""
+    """Admin endpoint to add manual student portal articles. Handles duplicates gracefully."""
     try:
         from src.database.models import VerifiedNews, RawNews
         
-        # 1. Create a dummy raw news entry for consistency
-        raw = RawNews(
-            title=payload.title,
-            description=payload.description,
-            url=payload.redirect_url,
-            url_to_image=payload.image_url,
-            source_name="Student Portal Editorial",
-            published_at=datetime.utcnow(),
-            is_verified=True,
-            processed=True,
-            country="Global"
-        )
-        db.add(raw)
-        db.commit()
-        db.refresh(raw)
+        # 1. Lookup or create RawNews entry based on URL (Unique Constraint fix)
+        raw = db.query(RawNews).filter(RawNews.url == payload.redirect_url).first()
         
-        # 2. Create the verified intelligence record with MAX PRIORITY
-        verified = VerifiedNews(
-            raw_news_id=raw.id,
-            title=payload.title,
-            content=payload.description,
-            summary_bullets=[payload.description[:100] + "..."],
-            impact_tags=[payload.category],
-            bias_rating="Neutral",
-            category=payload.category,
-            country="Global",
-            credibility_score=1.0,
-            impact_score=100, # MAX PRIORITY
-            why_it_matters=payload.description[:200],
-            sentiment="Neutral",
-            is_verified=True,
-            analysis={"access_link": payload.access_link},
-            published_at=datetime.utcnow()
-        )
-        db.add(verified)
+        if not raw:
+            raw = RawNews(
+                title=payload.title,
+                description=payload.description,
+                url=payload.redirect_url,
+                url_to_image=payload.image_url,
+                source_name="Student Portal Editorial",
+                published_at=datetime.utcnow(),
+                is_verified=True,
+                processed=True,
+                country="Global"
+            )
+            db.add(raw)
+            db.flush() # Get raw.id without committing
+        else:
+            # Update existing raw news metadata
+            raw.title = payload.title
+            raw.description = payload.description
+            raw.url_to_image = payload.image_url
+            raw.source_name = "Student Portal Editorial"
+            raw.is_verified = True
+            raw.processed = True
+
+        # 2. Lookup or create VerifiedNews entry linked to this RawNews
+        verified = db.query(VerifiedNews).filter(VerifiedNews.raw_news_id == raw.id).first()
+        
+        if not verified:
+            verified = VerifiedNews(
+                raw_news_id=raw.id,
+                title=payload.title,
+                content=payload.description,
+                summary_bullets=[payload.description[:100] + "..."],
+                impact_tags=[payload.category],
+                bias_rating="Neutral",
+                category=payload.category,
+                country="Global",
+                credibility_score=1.0,
+                impact_score=100, # MAX PRIORITY FOR MANUAL
+                why_it_matters=payload.description[:200],
+                sentiment="Neutral",
+                is_verified=True,
+                analysis={"access_link": payload.access_link},
+                published_at=datetime.utcnow()
+            )
+            db.add(verified)
+        else:
+            # Update existing verified record
+            verified.title = payload.title
+            verified.content = payload.description
+            verified.category = payload.category
+            verified.impact_score = 100
+            verified.why_it_matters = payload.description[:200]
+            
+            # Update access link in analysis blob
+            current_analysis = verified.analysis or {}
+            if isinstance(current_analysis, str):
+                try: current_analysis = json.loads(current_analysis)
+                except: current_analysis = {}
+            current_analysis["access_link"] = payload.access_link
+            verified.analysis = current_analysis
+
+        # 3. Finalize Atomic Transaction
         db.commit()
         db.refresh(verified)
         
-        # 3. Clear student cache to reflect change immediately
+        # 4. Clear cache
         _student_news_caches.clear()
         
         return {"success": True, "article": verified.to_dict()}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Manual student article deployment failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database sync failed: {str(e)}")
 
 @router.put("/api/articles/{article_id}")
 async def update_article(article_id: int, payload: ManualStudentArticleRequest, db: Session = Depends(get_db)):
@@ -1737,22 +1768,30 @@ async def update_article(article_id: int, payload: ManualStudentArticleRequest, 
         if not article:
             raise HTTPException(status_code=404, detail="Article not found")
 
+        # Update Verified record
         article.title = payload.title
         article.content = payload.description
         article.category = payload.category
-        article.impact_score = 100 # Maintain as manual
+        article.impact_score = 100 
         
         # Access link storage in analysis blob
         current_analysis = article.analysis or {}
         if isinstance(current_analysis, str):
-            import json
             try: current_analysis = json.loads(current_analysis)
             except: current_analysis = {}
         
         current_analysis["access_link"] = payload.access_link
         article.analysis = current_analysis
 
+        # Update Raw link if exists
         if article.raw_news:
+            # URL Check for unique constraint if URL changed
+            if article.raw_news.url != payload.redirect_url:
+                existing_url = db.query(RawNews).filter(RawNews.url == payload.redirect_url).first()
+                if existing_url and existing_url.id != article.raw_news.id:
+                     # Merge or reject? For now, we update if not a duplicate
+                     raise HTTPException(status_code=400, detail="Redirect URL already exists in another node.")
+            
             article.raw_news.title = payload.title
             article.raw_news.description = payload.description
             article.raw_news.url = payload.redirect_url
@@ -1761,8 +1800,10 @@ async def update_article(article_id: int, payload: ManualStudentArticleRequest, 
         db.commit()
         _student_news_caches.clear()
         return {"success": True, "article": article.to_dict()}
+    except HTTPException: raise
     except Exception as e:
         db.rollback()
+        logger.error(f"Article update failed: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/api/articles/{article_id}")
