@@ -145,6 +145,17 @@ def normalize_article_data(data: dict):
     
     return data
 
+STUDENT_NEWS_CATEGORIES = ["Scholarships & Internships", "Exams & Results", "Policy & Research", "Admissions & Courses", "Campus Life", "Career & Jobs"]
+STUDENT_KEYWORDS = ["student", "exam", "school", "university", "college", "scholarship", "syllabus", "ugc", "cbse", "nta", "placement", "job", "career", "admission", "startup", "grant", "hackathon", "funding", "education", "learning", "degree", "diploma", "research", "campus", "internship", "hiring", "recruitment", "youth", "academic", "tuition", "entrance", "vacancy", "intern", "campus", "test", "result", "admit", "coaching", "training", "fresher", "neet", "jee", "upsc", "ssc", "board exam", "admit card"]
+
+def is_student_article_logic(article):
+    """Unified logic to determine if an article should be shown in the student portal."""
+    combined = f"{article.title} {article.content or ''}".lower()
+    is_student_cat = article.category in STUDENT_NEWS_CATEGORIES
+    has_keywords = any(kw in combined for kw in STUDENT_KEYWORDS)
+    is_global = article.country == "Global"
+    return is_student_cat or has_keywords or is_global
+
 def log_protocol_action(db: Session, action: str, target_type: str, target_id: str = None, admin_user: str = "Admin", details: str = None):
     """Helper to record administrative actions for protocol history."""
     try:
@@ -1559,8 +1570,14 @@ async def get_all_articles(category: str = None, country: str = None, db: Sessio
             
         # LIFO: Impact score first (manual priority), then newest first
         articles = query.order_by(VerifiedNews.impact_score.desc(), VerifiedNews.created_at.desc()).all()
+        
+        # FINAL PARITY: If category is student-related, apply the same filter as the main website
+        if category in STUDENT_NEWS_CATEGORIES:
+            articles = [a for a in articles if is_student_article_logic(a)]
+            
         return [a.to_dict() for a in articles]
     except Exception as e:
+        logger.error(f"Failed to fetch articles for Admin: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/api/articles/{article_id}")
@@ -1791,21 +1808,36 @@ async def create_manual_student_article(payload: ManualStudentArticleRequest, db
             current_analysis["access_link"] = payload.access_link
             verified.analysis = current_analysis
 
-        # 3. Finalize Atomic Transaction
-        db.commit()
-        db.refresh(verified)
-        
+        # 3. Finalize Atomic Transaction with extra safety
+        from sqlalchemy.exc import IntegrityError
+        try:
+            db.commit()
+            db.refresh(verified)
+        except IntegrityError as ie:
+            db.rollback()
+            logger.error(f"Article Sync Collision Resolve: {ie}")
+            # Final attempt: direct update if ID collision happened
+            verified = db.query(VerifiedNews).filter(VerifiedNews.raw_news_id == raw.id).first()
+            if verified:
+                verified.title = payload.title
+                verified.content = payload.description
+                verified.category = payload.category
+                verified.published_at = datetime.utcnow()
+                db.commit()
+            else:
+                raise ie
+
         # Log Action
         log_protocol_action(db, "deploy", "student_article", verified.id, details=f"Deployed manual student article: {payload.title}")
         
-        # 4. Clear cache
+        # 4. Clear cache to force real-time sync
         _student_news_caches.clear()
         
         return {"success": True, "article": verified.to_dict()}
     except Exception as e:
         db.rollback()
-        logger.error(f"Manual student article deployment failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Database sync failed: {str(e)}")
+        logger.error(f"Manual student article deployment failed CRITICAL: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Infrastructure Sync Fail: {str(e)}")
 
 @router.put("/api/articles/{article_id}")
 async def update_article(article_id: int, payload: ManualStudentArticleRequest, db: Session = Depends(get_db)):
@@ -2067,17 +2099,12 @@ def _update_student_cache_if_needed(db: Session, force: bool = False, country: s
     scholarship_count = 0
     exam_mentions = {}
     
-    student_categories = ["Scholarships & Internships", "Exams & Results", "Policy & Research", "Admissions & Courses", "Campus Life", "Career & Jobs"]
-    student_keywords = ["student", "exam", "school", "university", "college", "scholarship", "syllabus", "ugc", "cbse", "nta", "placement", "job", "career", "admission", "startup", "grant", "hackathon", "funding", "education", "learning", "degree", "diploma", "research", "campus", "internship", "hiring", "recruitment", "youth", "academic", "tuition", "entrance", "vacancy", "intern", "campus", "test", "result", "admit", "coaching", "training", "fresher", "neet", "jee", "upsc", "ssc", "board exam", "admit card"]
-
     for article in raw_articles:
-        combined = f"{article.title} {article.content}".lower()
-        is_student_cat = article.category in student_categories
-        has_keywords = any(kw in combined for kw in student_keywords)
-        
-        # Check if it's a student-focused category OR has student keywords OR is a Global (manual) article
-        if not (is_student_cat or has_keywords or article.country == "Global"):
+        # Check if it should be visible to students (Shared Logic)
+        if not is_student_article_logic(article):
             continue
+            
+        is_student_cat = article.category in STUDENT_NEWS_CATEGORIES
             
         # If explicitly categorized, use that directly
         if is_student_cat:
