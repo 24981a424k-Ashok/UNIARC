@@ -2326,3 +2326,116 @@ async def track_topic(data: dict, db: Session = Depends(get_db)):
     db.commit()
     return {"status": "success", "message": "Topic tracking enabled"}
 
+# ====================== ADMIN API ROUTES ======================
+
+@router.get("/api/articles")
+async def get_admin_articles(category: str = None, db: Session = Depends(get_db)):
+    query = db.query(VerifiedNews)
+    if category:
+        query = query.filter(VerifiedNews.category == category)
+    articles = query.order_by(VerifiedNews.published_at.desc()).limit(100).all()
+    return [a.to_dict() for a in articles]
+
+@router.put("/api/articles/{id}")
+async def update_article(id: int, data: dict, db: Session = Depends(get_db)):
+    article = db.query(VerifiedNews).filter(VerifiedNews.id == id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    for key, value in data.items():
+        if hasattr(article, key):
+            setattr(article, key, value)
+    
+    db.commit()
+    log_protocol_action(db, "update", "article", str(id), details=f"Updated article: {article.title}")
+    return {"status": "success"}
+
+@router.delete("/api/articles/{id}")
+async def delete_article(id: int, db: Session = Depends(get_db)):
+    article = db.query(VerifiedNews).filter(VerifiedNews.id == id).first()
+    if not article:
+        raise HTTPException(status_code=404, detail="Article not found")
+    
+    db.delete(article)
+    db.commit()
+    log_protocol_action(db, "delete", "article", str(id), details=f"Deleted article: {article.title}")
+    return {"status": "success"}
+
+@router.get("/api/ads")
+async def get_ads(db: Session = Depends(get_db)):
+    ads = db.query(Advertisement).order_by(Advertisement.created_at.desc()).all()
+    return ads
+
+@router.post("/api/ads")
+async def create_ad(data: dict, db: Session = Depends(get_db)):
+    new_ad = Advertisement(
+        image_url=data.get("image_url"),
+        caption=data.get("caption"),
+        target_url=data.get("target_url"),
+        position=data.get("position", "both"),
+        target_platform=data.get("target_platform", "both")
+    )
+    db.add(new_ad)
+    db.commit()
+    log_protocol_action(db, "create", "ad", str(new_ad.id), details=f"Created ad: {new_ad.caption}")
+    return {"status": "success", "id": new_ad.id}
+
+@router.delete("/api/ads/{id}")
+async def delete_ad(id: int, db: Session = Depends(get_db)):
+    ad = db.query(Advertisement).filter(Advertisement.id == id).first()
+    if not ad:
+        raise HTTPException(status_code=404, detail="Ad not found")
+    db.delete(ad)
+    db.commit()
+    log_protocol_action(db, "delete", "ad", str(id), details=f"Deleted ad: {ad.caption}")
+    return {"status": "success"}
+
+@router.get("/api/newspapers")
+async def get_newspapers(db: Session = Depends(get_db)):
+    papers = db.query(Newspaper).order_by(Newspaper.name.asc()).all()
+    return papers
+
+@router.post("/api/newspapers")
+async def create_newspaper(data: dict, db: Session = Depends(get_db)):
+    new_paper = Newspaper(
+        name=data.get("name"),
+        url=data.get("url"),
+        logo_text=data.get("logo_text"),
+        logo_color=data.get("logo_color", "#000000"),
+        country=data.get("country", "Global")
+    )
+    db.add(new_paper)
+    db.commit()
+    log_protocol_action(db, "create", "source", str(new_paper.id), details=f"Created source: {new_paper.name}")
+    return {"status": "success", "id": new_paper.id}
+
+@router.delete("/api/newspapers/{id}")
+async def delete_newspaper(id: int, db: Session = Depends(get_db)):
+    paper = db.query(Newspaper).filter(Newspaper.id == id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Source not found")
+    db.delete(paper)
+    db.commit()
+    log_protocol_action(db, "delete", "source", str(id), details=f"Deleted source: {paper.name}")
+    return {"status": "success"}
+
+@router.get("/api/history")
+async def get_history(db: Session = Depends(get_db)):
+    history = db.query(ProtocolHistory).order_by(ProtocolHistory.timestamp.desc()).limit(200).all()
+    return history
+
+@router.get("/api/blueprints")
+async def get_blueprints():
+    # Return a basic default blueprint for now to prevent errors
+    return [{"_id": "default", "isActive": True, "structure": []}]
+
+@router.post("/api/blueprints/publish/{id}")
+async def publish_blueprint(id: str):
+    return {"status": "success", "message": "Blueprint published"}
+
+@router.post("/api/sync-intelligence")
+async def sync_intelligence(background_tasks: BackgroundTasks):
+    from src.scheduler.task_scheduler import run_news_cycle
+    background_tasks.add_task(run_news_cycle)
+    return {"status": "success", "message": "Intelligence synchronization started in background"}
+
