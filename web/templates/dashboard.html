@@ -209,25 +209,45 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        .nav-item {
+            position: relative;
+            padding: 0 1rem;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .nav-item:hover .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
 
         /* Mobile Nav Styles */
         .mobile-menu-btn {
             display: none;
             flex-direction: column;
-            gap: 6px;
-            background: rgba(255,255,255,0.05);
+            gap: 4px;
+            background: rgba(255,255,255,0.08);
             border: 1px solid var(--border-highlight);
             padding: 10px;
             border-radius: 8px;
             cursor: pointer;
-            z-index: 100002;
+            z-index: 100005;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 44px;
         }
         .mobile-menu-btn span {
             display: block;
-            width: 20px;
+            width: 22px;
             height: 2px;
-            background: white;
+            background: #ffffff !important;
             transition: all 0.3s;
+            border-radius: 2px;
         }
         @media (max-width: 992px) {
             .mobile-menu-btn { display: flex; }
@@ -285,10 +305,10 @@
         /* Fixed Sidebar Ad Positioning */
         .fixed-sidebar {
             position: fixed;
-            top: 120px;
+            top: 160px;
             width: 180px;
-            height: calc(100vh - 140px);
-            z-index: 100;
+            height: calc(100vh - 200px);
+            z-index: 1005;
             background: rgba(15, 23, 42, 0.6);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border-highlight);
@@ -723,7 +743,7 @@
         <nav class="nav-center">
             <a href="/dashboard" class="nav-link">{{ nL.home or 'Home' }}</a>
             <div class="nav-item">
-                <span style="display: flex; align-items: center; height: 100%;">{{ nL.cat or 'Category' }}</span>
+                <span class="nav-label" style="display: flex; align-items: center; height: 100%;">{{ nL.cat or 'Category' }}</span>
                 <div class="dropdown-menu">
                     {% if categories %}
                         {% for cat in categories %}
@@ -738,7 +758,7 @@
                 </div>
             </div>
             <div class="nav-item">
-                <span style="display: flex; align-items: center; height: 100%;">{{ nL.nodes or 'Global Nodes' }}</span>
+                <span class="nav-label" style="display: flex; align-items: center; height: 100%;">{{ nL.nodes or 'Global Nodes' }}</span>
                 <div class="dropdown-menu" style="max-height: 400px; overflow-y: auto;">
                     {% if papers %}
                         {% for paper in papers %}

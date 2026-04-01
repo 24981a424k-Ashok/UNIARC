@@ -239,7 +239,7 @@ header {
     transition: all 0.2s ease;
     display: flex;
     flex-direction: column;
-    z-index: 1005;
+    z-index: 100010;
 }
 
 .nav-item:hover .dropdown-menu,
@@ -1598,7 +1598,7 @@ header {
    ========================================= */
 .fixed-sidebar {
     position: fixed;
-    top: 55%;
+    top: 50%;
     /* Moved down from 48% */
     transform: translateY(-50%);
     width: 120px;
@@ -1607,7 +1607,7 @@ header {
     backdrop-filter: blur(15px);
     border: 1px solid var(--border-highlight);
     border-radius: var(--radius-md);
-    z-index: 1000;
+    z-index: 1005;
     padding: 0.8rem 0.2rem;
     display: flex;
     flex-direction: column;
