@@ -33,5 +33,10 @@ class TwilioHelper:
             logger.error(f"Failed to send SMS to {to_number}: {e}")
             return None
 
+    def send_otp(self, to_number: str, otp: str):
+        """Send OTP code via SMS."""
+        message_body = f"Your AI News Intelligence verification code is: {otp}. It expires in 5 minutes."
+        return self.send_sms(to_number, message_body)
+
 # Singleton instance
 twilio_helper = TwilioHelper()

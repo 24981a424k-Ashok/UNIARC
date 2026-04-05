@@ -2497,14 +2497,141 @@
                 }, 7000);
             });
         }
+    </script>
 
+    <!-- 10. FLOATING LIVE CRICKET WIDGET -->
+    <div id="live-cricket-widget" class="cricket-widget hidden">
+        <div class="cricket-header">
+            <span class="live-pulse"></span>
+            <span class="cricket-label">LIVE CRICKET</span>
+            <button class="close-cricket" onclick="document.getElementById('live-cricket-widget').remove()">&times;</button>
+        </div>
+        <div class="cricket-body">
+            <div id="cricket-match-name" class="match-name">India vs Australia</div>
+            <div id="cricket-score" class="match-score">125/2 (15.4)</div>
+            <div id="cricket-status" class="match-status">India needs 45 runs to win</div>
+        </div>
+    </div>
+
+    <style>
+        .cricket-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 20px;
+            padding: 15px;
+            z-index: 9999;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.8);
+            transform: translateY(0);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            font-family: 'Inter', sans-serif;
+        }
+        .cricket-widget.hidden {
+            transform: translateY(150%) scale(0.8);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .cricket-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+        .live-pulse {
+            width: 8px;
+            height: 8px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px #ef4444;
+            animation: pulse-red 1.5s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        .cricket-label {
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ef4444;
+            text-transform: uppercase;
+        }
+        .close-cricket {
+            margin-left: auto;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .close-cricket:hover { color: white; }
+        .match-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 4px;
+        }
+        .match-score {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+            letter-spacing: -1px;
+        }
+        .match-status {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+    </style>
+
+    <script>
+        async function updateLiveCricket() {
+            try {
+                const response = await fetch('/api/cricket/live');
+                const data = await response.json();
+                const widget = document.getElementById('live-cricket-widget');
+                
+                if (data.live) {
+                    document.getElementById('cricket-match-name').innerText = data.match.name;
+                    document.getElementById('cricket-score').innerText = data.match.short_score;
+                    document.getElementById('cricket-status').innerText = data.match.status;
+                    widget.classList.remove('hidden');
+                } else {
+                    // console.log("No live match:", data.message);
+                    // Handle case where match ends or none live
+                    // widget.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error("Cricket fetch error:", err);
+            }
+        }
+
+        // Initialize and poll every 60 seconds
+        setTimeout(() => {
+            updateLiveCricket();
+            setInterval(updateLiveCricket, 60000);
+        }, 3000);
+    </script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="/static/dashboard.js"></script>
+
+    <script>
         document.addEventListener('DOMContentLoaded', () => {
-            initializeAdSliders();
-            firebase.auth().onAuthStateChanged((user) => {
-                if (user) updateStreakDashboard();
-            });
+             // Initialize ad sliders if they exist
+             if (typeof initializeAdSliders === 'function') {
+                 initializeAdSliders();
+             }
         });
     </script>
 </body>
-
 </html>

@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, Float, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, sessionmaker
 
-from src.config.settings import DATABASE_URL
+# Base logic moved to database.py
 
 Base = declarative_base()
 
@@ -274,6 +274,14 @@ class Newspaper(Base):
     country = Column(String, default="Global")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class SystemSecret(Base):
+    __tablename__ = "system_secrets"
+    
+    key = Column(String, primary_key=True, index=True) # e.g. "OPENAI_API_KEY"
+    value = Column(Text, nullable=False)
+    description = Column(Text, nullable=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class ProtocolHistory(Base):
     __tablename__ = "protocol_history"
     
@@ -285,11 +293,7 @@ class ProtocolHistory(Base):
     details = Column(Text, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
     
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+from .database import engine, SessionLocal
 
 def init_db():
     Base.metadata.create_all(bind=engine)

@@ -31,6 +31,8 @@ universe_collector = UniverseCollector()
 translator = NewsTranslator()
 student_classifier = StudentClassifier()
 llm_analyzer = LLMAnalyzer()
+from src.services.cricket_service import CricketService
+cricket_service = CricketService()
 
 # Define FIREBASE_CLIENT_CONFIG globally
 FIREBASE_CLIENT_CONFIG = {
@@ -149,9 +151,9 @@ def normalize_article_data(data: dict):
     return data
 
 STUDENT_NEWS_CATEGORIES = [
-    "Scholarships & Internships", "Exams & Results", "Policy & Research", 
-    "Admissions & Courses", "Campus Life", "Career & Jobs", "Education",
-    "Student Opportunities", "Academic Research"
+    "Scholarships & Internships", "Exams & Results", "Education Policy & Govt Updates", 
+    "Career & Placement News", "Study Abroad Updates", "AI & Tech for Students",
+    "Admissions & Courses", "Campus Life", "Academic Research", "Education"
 ]
 STUDENT_KEYWORDS = [
     "student", "exam", "school", "university", "college", "scholarship", "syllabus", 
@@ -173,16 +175,22 @@ def is_student_article_logic(article):
         (article.category or "")
     ).lower()
     
+    # PREMIUM SOURCE CHECK: Articles from NewsData specifically targeted for students
+    is_nd_student = False
+    if article.raw_news and hasattr(article.raw_news, 'source_id') and article.raw_news.source_id:
+        if str(article.raw_news.source_id).startswith("nd-"):
+            is_nd_student = True
+
     is_student_cat = article.category in STUDENT_NEWS_CATEGORIES
     has_keywords = any(kw in combined for kw in STUDENT_KEYWORDS)
     is_global = article.country == "Global"
     
     # Specific exclusion for pure market/stock news not impacting education
     if "stock price" in combined or "market capitalization" in combined:
-        if not is_student_cat:
+        if not is_student_cat and not is_nd_student:
             return False
             
-    return is_student_cat or has_keywords or is_global
+    return is_student_cat or has_keywords or is_global or is_nd_student
 
 def log_protocol_action(db: Session, action: str, target_type: str, target_id: str = None, admin_user: str = "Admin", details: str = None):
     """Helper to record administrative actions for protocol history."""
@@ -314,8 +322,9 @@ async def landing_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html", context={"firebase_config": firebase_config})
 
 @router.get("/dashboard")
-async def dashboard(request: Request, category: str = None, country: str = None, lang: str = 'english', db: Session = Depends(get_db)):
+async def dashboard(request: Request, uid: str = None, category: str = None, country: str = None, lang: str = 'english', db: Session = Depends(get_db)):
     """Render the main intelligence portal"""
+    logger.info(f"Dashboard hit - UID: {uid}, Category: {category}, Country: {country}")
     try:
         # 0. Context & Initialization
         blueprint = None
@@ -2140,8 +2149,8 @@ async def student_news_page(request: Request, category: str = None, profile: str
     return templates.TemplateResponse(request=request, name="student_news.html", context={
         "articles": articles[:10], # Only pass first 10 for pagination
         "trends": trends,
-        "categories": ["Scholarships & Internships", "Exams & Results", "Policy & Research", "Admissions & Courses", "Campus Life", "Career & Jobs"],
-        "profiles": ["High School", "Undergraduate", "Postgraduate", "PhD / Researcher", "Competitive Exam Aspirant"],
+        "categories": STUDENT_NEWS_CATEGORIES,
+        "profiles": ["High School", "Engineering Aspirant", "Medical Aspirant", "Govt Job Aspirant", "Graduate/Techie"],
         "current_category": category,
         "current_profile": profile,
         "current_country": country,
@@ -2271,19 +2280,30 @@ def _update_student_cache_if_needed(db: Session, force: bool = False, country: s
             continue
             
         is_student_cat = article.category in STUDENT_NEWS_CATEGORIES
+        is_nd_source = article.raw_news and str(article.raw_news.source_id).startswith("nd-")
             
-        # If explicitly categorized, use that directly
-        if is_student_cat:
-            student_data = {
-                "category": article.category,
-                "tags": [f"#{article.category.split(' ')[0]}"],
-                "profiles": ["University Student", "Job Seeker"],
-                "direct_links": [article.raw_news.url if article.raw_news else "#"],
-                "important_dates": ["See Details"],
-                "authority": article.raw_news.source_name if article.raw_news else "Intelligence Hub",
-                "urgency": "High" if article.impact_score > 7 else "Normal",
-                "trend_score": 1000 if article.impact_score >= 100 else (100 if article.impact_score > 8 else 85),
-            }
+        # If explicitly categorized or from premium student source, use/process that directly
+        if is_student_cat or is_nd_source:
+            # Re-run classifier even for ND articles to get better tags/profiles if category is just "Education"
+            student_data = student_classifier.process_article(article.title, article.content)
+            
+            if not student_data:
+                # Fallback if ND article is too short for classifier but we know it's student-related
+                student_data = {
+                    "category": article.category if article.category in STUDENT_NEWS_CATEGORIES else "Education",
+                    "tags": ["#Premium", "#StudentUpdate"],
+                    "profiles": ["General Student"],
+                    "direct_links": [article.raw_news.url if article.raw_news else "#"],
+                    "important_dates": ["See Details"],
+                    "authority": article.raw_news.source_name if article.raw_news else "Intelligence Hub",
+                    "urgency": "Normal",
+                    "trend_score": 90
+                }
+            
+            # Boost ND source trend score
+            if is_nd_source:
+                student_data["trend_score"] = max(student_data.get("trend_score", 0), 95)
+                student_data["tags"].append("#VerifiedData")
         else:
             student_data = student_classifier.process_article(article.title, article.content)
             
@@ -2478,6 +2498,20 @@ async def api_get_prediction_geo(db: Session = Depends(get_db)):
         logger.error(f"Geopolitics API failed: {e}")
         return {"headline": "Intelligence Node Offset", "prediction_text": "AI node currently unavailable.", "market_impact": "Monitor local nodes.", "confidence_level": "N/A"}
 
+@router.get("/api/cricket/live")
+async def get_live_cricket():
+    """
+    Endpoint for the floating dashboard widget to fetch live scores.
+    """
+    try:
+        score_data = cricket_service.get_live_scores()
+        if not score_data:
+            return {"live": False, "message": "No live India/IPL match at the moment."}
+        return {"live": True, "match": score_data}
+    except Exception as e:
+        logger.error(f"Live cricket API failure: {e}")
+        return {"live": False, "error": str(e)}
+
 @router.post("/api/user/upload_profile_image")
 async def upload_user_image(
     firebase_uid: str = Form(...),
@@ -2514,35 +2548,46 @@ async def upload_user_image(
 
 @router.post("/api/auth/twilio/send-otp")
 async def send_twilio_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
-    phone = payload.get("phone")
-    if not phone:
-        raise HTTPException(status_code=400, detail="Phone number required")
-    
-    # Clean phone number
-    phone = "".join(filter(str.isdigit, phone))
-    if not phone.startswith('+'):
-        # Default to India (+91) as requested for mobile login context
-        if len(phone) == 10: phone = "+91" + phone
-        else: phone = "+" + phone
-
-    otp = str(random.randint(100000, 999999))
-    expires_at = datetime.utcnow() + timedelta(minutes=5)
-    
-    from src.database.models import OTPVerification
-    from src.utils.twilio_helper import twilio_helper
-    
-    # Save to DB
-    new_otp = OTPVerification(phone=phone, otp_code=otp, expires_at=expires_at)
-    db.add(new_otp)
-    db.commit()
-    
-    # Send via Twilio
-    success = twilio_helper.send_otp(phone, otp)
-    if not success:
-        logger.error(f"Twilio failure for {phone}")
-        raise HTTPException(status_code=500, detail="Failed to send SMS via Twilio")
+    try:
+        phone = payload.get("phone")
+        if not phone:
+            raise HTTPException(status_code=400, detail="Phone number required")
         
-    return {"status": "success", "message": "OTP sent"}
+        # Clean phone number
+        phone = "".join(filter(str.isdigit, phone))
+        if not phone.startswith('+'):
+            # Default to India (+91) as requested for mobile login context
+            if len(phone) == 10: phone = "+91" + phone
+            else: phone = "+" + phone
+
+        otp = str(random.randint(100000, 999999))
+        expires_at = datetime.utcnow() + timedelta(minutes=5)
+        
+        from src.database.models import OTPVerification
+        from src.utils.twilio_helper import twilio_helper
+        
+        # Save to DB
+        new_otp = OTPVerification(phone=phone, otp_code=otp, expires_at=expires_at)
+        db.add(new_otp)
+        db.commit()
+        
+        # Send via Twilio
+        try:
+            success_sid = twilio_helper.send_otp(phone, otp)
+            if not success_sid:
+                logger.error(f"Twilio failure for {phone}")
+                return JSONResponse(status_code=500, content={"status": "error", "detail": "Failed to send SMS via Twilio"})
+                
+            logger.info(f"OTP Flow Success: {phone} -> {success_sid}")
+            return {"status": "success", "message": "OTP sent"}
+        except Exception as twilio_e:
+            logger.exception(f"Twilio Dispatch Crash: {twilio_e}")
+            # If the SMS might have been sent, we still return a success-like JSON or a specific error JSON
+            return JSONResponse(status_code=500, content={"status": "error", "detail": f"Twilio communication failed: {str(twilio_e)}"})
+
+    except Exception as e:
+        logger.exception(f"CRITICAL ERROR in send_twilio_otp: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
 @router.post("/api/auth/twilio/verify-otp")
 async def verify_twilio_otp(payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -2578,7 +2623,19 @@ async def verify_twilio_otp(payload: dict = Body(...), db: Session = Depends(get
         db.add(user)
     
     db.commit()
-    return {"status": "success", "firebase_uid": user.firebase_uid}
+    
+    # Generate Firebase Custom Token for the user
+    try:
+        from src.config.firebase_config import get_auth
+        custom_token = get_auth().create_custom_token(user.firebase_uid)
+        return {
+            "status": "success", 
+            "firebase_uid": user.firebase_uid,
+            "custom_token": custom_token.decode("utf-8") if isinstance(custom_token, bytes) else custom_token
+        }
+    except Exception as e:
+        logger.error(f"Failed to create custom token: {e}")
+        return {"status": "success", "firebase_uid": user.firebase_uid, "error": "Token bridge failed"}
 
 @router.post("/api/track-topic")
 async def track_topic(data: dict, db: Session = Depends(get_db)):

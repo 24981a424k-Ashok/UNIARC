@@ -416,51 +416,70 @@
         // Twilio Phone Auth (Custom)
         btnPhoneSubmit.onclick = async () => {
             const phoneInput = document.getElementById('phone-number').value.trim();
-            if (!phoneInput) return alert("Please enter a mobile number.");
-
+            const otpGroup = document.getElementById('otp-group');
+            
             if (btnPhoneSubmit.innerText === 'Send Code') {
-                setLoading(btnPhoneSubmit, true);
+                if (!phoneInput) {
+                    alert("Please enter a phone number");
+                    return;
+                }
+                
+                btnPhoneSubmit.innerText = 'Verifying...';
+                
                 try {
                     const response = await fetch('/api/auth/twilio/send-otp', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone: phoneInput })
                     });
-                    const data = await response.json();
-                    if (data.status === 'success') {
-                        otpGroup.style.display = 'block';
-                        btnPhoneSubmit.innerText = 'Verify OTP';
-                        alert("OTP sent to your mobile number via Twilio.");
-                    } else {
-                        alert("Failed to send OTP: " + data.detail);
-                    }
+                    
+                    btnPhoneSubmit.innerText = 'Verify OTP';
+                    otpGroup.style.display = 'block';
+                    
                 } catch (error) {
-                    alert("Error: " + error.message);
-                } finally {
-                    setLoading(btnPhoneSubmit, false);
+                    console.error("Fetch error:", error);
+                    btnPhoneSubmit.innerText = 'Verify OTP';
+                    otpGroup.style.display = 'block';
                 }
             } else {
                 const otp = document.getElementById('verification-code').value.trim();
                 if (!otp) return alert("Please enter the verification code.");
                 
-                setLoading(btnPhoneSubmit, true);
                 try {
+                    btnPhoneSubmit.innerText = 'Verifying...';
+                    btnPhoneSubmit.disabled = true;
+                    
+                    const startTime = Date.now();
                     const response = await fetch('/api/auth/twilio/verify-otp', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ phone: phoneInput, otp: otp })
                     });
+                    
                     const data = await response.json();
-                    if (data.status === 'success' && data.firebase_uid) {
-                        // Redirect to dashboard with UID (backend will handle session or frontend will use this UID)
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < 3000) await new Promise(r => setTimeout(r, 3000 - elapsed));
+
+                    if (data.status === 'success' && (data.firebase_uid || data.custom_token)) {
+                        console.log("OTP Correct - Establishing Firebase Session...");
+                        try {
+                            localStorage.setItem('user_uid', data.firebase_uid);
+                            await auth.signInWithCustomToken(data.custom_token);
+                            await new Promise(r => setTimeout(r, 1000));
+                        } catch (tokenErr) {
+                            console.error("Token sign-in failed:", tokenErr);
+                        }
                         window.location.href = `/dashboard?uid=${data.firebase_uid}&lang=english`;
                     } else {
-                        alert("Verification failed: " + (data.detail || "Invalid OTP"));
+                        btnPhoneSubmit.innerText = 'Verify OTP';
+                        btnPhoneSubmit.disabled = false;
+                        alert("OTP is invalid. Please check and try again.");
                     }
-                } catch (error) {
-                    alert("Error: " + error.message);
-                } finally {
-                    setLoading(btnPhoneSubmit, false);
+                } catch (err) {
+                    console.error("Verification Error:", err);
+                    btnPhoneSubmit.innerText = 'Verify OTP';
+                    btnPhoneSubmit.disabled = false;
+                    alert("Network error during verification. Please try again.");
                 }
             }
         };
@@ -481,9 +500,8 @@
             }
         };
 
-        auth.onAuthStateChanged(user => {
-            if (user) window.location.href = '/dashboard';
-        });
+        // REMOVED: Redundant and race-condition-prone global redirect
+        // auth.onAuthStateChanged(user => { ... });
     </script>
 </body>
 

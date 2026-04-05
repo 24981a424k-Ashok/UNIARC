@@ -20,6 +20,7 @@ faiss-cpu>=1.7.4
 # Database
 sqlalchemy>=2.0.0
 alembic>=1.12.0
+psycopg2-binary>=2.9.9
 
 # Web & Delivery
 fastapi>=0.104.0

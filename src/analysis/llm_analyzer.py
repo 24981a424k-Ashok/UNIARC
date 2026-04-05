@@ -24,6 +24,9 @@ class LLMAnalyzer:
             self.client = None
         else:
             logger.info(f"LLMAnalyzer initialized with {len(self.openai_keys)} OpenAI keys and {len(self.groq_keys)} Groq keys for rotation.")
+        
+        # Hugging Face Security fix: Limit concurrency to 5 and add jitter
+        self.semaphore = asyncio.Semaphore(5)
 
     def _get_openai_client(self, index=0):
         """Get an OpenAI client for a specific key in the pool."""
@@ -50,7 +53,14 @@ class LLMAnalyzer:
         for i in range(len(self.openai_keys)):
             client = await self._get_async_client("openai", i)
             try:
-                tasks = [self._analyze_single_with_fallback(a, client, is_sports) for a in articles]
+                # Wrap tasks in semaphore and jitter for HF security compliance
+                async def sem_task(article):
+                    async with self.semaphore:
+                         import random
+                         await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
+                         return await self._analyze_single_with_fallback(article, client, is_sports)
+
+                tasks = [sem_task(a) for a in articles]
                 results = await asyncio.gather(*tasks)
                 await client.close()
                 return results
@@ -66,8 +76,15 @@ class LLMAnalyzer:
             logger.info(f"Using Groq Key #{j+1} fallback for batch analysis.")
             client = await self._get_async_client("groq", j)
             try:
-                model = "llama-3.3-70b-versatile"
-                tasks = [self._analyze_single_with_fallback(a, client, is_sports, model=model) for a in articles]
+                # Wrap tasks in semaphore and jitter for HF security compliance
+                async def sem_task_groq(article):
+                    async with self.semaphore:
+                         import random
+                         await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
+                         model = "llama-3.3-70b-versatile"
+                         return await self._analyze_single_with_fallback(article, client, is_sports, model=model)
+
+                tasks = [sem_task_groq(a) for a in articles]
                 results = await asyncio.gather(*tasks)
                 await client.close()
                 return results
@@ -286,7 +303,14 @@ IMPORTANT: Output ONLY valid JSON.
         client = AsyncOpenAI(api_key=self.api_key)
         
         try:
-            tasks = [self._analyze_premium_single(a, client) for a in articles]
+            # Wrap tasks in semaphore and jitter for HF security compliance
+            async def sem_task_premium(article):
+                async with self.semaphore:
+                    import random
+                    await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
+                    return await self._analyze_premium_single(article, client)
+
+            tasks = [sem_task_premium(a) for a in articles]
             results = await asyncio.gather(*tasks)
             return results
         except Exception as e:
@@ -539,15 +563,18 @@ IMPORTANT: Output ONLY valid JSON.
         """
         try:
             from openai import AsyncOpenAI
-            client = AsyncOpenAI(api_key=self.api_key)
-            response = await client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "system", "content": "You are a professional fact-checker."}, {"role": "user", "content": prompt}],
-                temperature=0.1
-            )
-            data = json.loads(response.choices[0].message.content)
-            await client.close()
-            return data
+            async with self.semaphore:
+                import random
+                await asyncio.sleep(random.uniform(0.1, 0.4))
+                client = AsyncOpenAI(api_key=self.api_key)
+                response = await client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[{"role": "system", "content": "You are a professional fact-checker."}, {"role": "user", "content": prompt}],
+                    temperature=0.1
+                )
+                data = json.loads(response.choices[0].message.content)
+                await client.close()
+                return data
         except Exception as e:
             logger.error(f"Fact-check failed: {e}")
             return {"is_fake": False, "confidence": 0.0, "reason": "System error during verification."}
@@ -583,24 +610,28 @@ IMPORTANT: Output ONLY valid JSON.
             from openai import AsyncOpenAI
             from src.config import settings
 
-            crystal_key = getattr(settings, 'GROQ_KEY_CRYSTAL_BALL', None)
-            
-            if crystal_key:
-                client = AsyncOpenAI(api_key=crystal_key, base_url="https://api.groq.com/openai/v1")
-                model = "llama-3.3-70b-versatile"
-                logger.info("Using specialized Groq key for AI Crystal Ball")
-            else:
-                client = AsyncOpenAI(api_key=self.api_key)
-                model = "gpt-4o-mini"
-            
-            response = await client.chat.completions.create(
-                model=model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.7
-            )
-            data = json.loads(response.choices[0].message.content)
-            await client.close()
-            return data
+            async with self.semaphore:
+                import random
+                await asyncio.sleep(random.uniform(0.1, 0.4))
+                
+                crystal_key = getattr(settings, 'GROQ_KEY_CRYSTAL_BALL', None)
+                
+                if crystal_key:
+                    client = AsyncOpenAI(api_key=crystal_key, base_url="https://api.groq.com/openai/v1")
+                    model = "llama-3.3-70b-versatile"
+                    logger.info("Using specialized Groq key for AI Crystal Ball")
+                else:
+                    client = AsyncOpenAI(api_key=self.api_key)
+                    model = "gpt-4o-mini"
+                
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.7
+                )
+                data = json.loads(response.choices[0].message.content)
+                await client.close()
+                return data
         except Exception as e:
             logger.error(f"Prediction failed: {e}")
             return {

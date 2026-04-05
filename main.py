@@ -105,6 +105,21 @@ async def lifespan(app: FastAPI):
         finally:
             db.close()
 
+    # 4. Self-Healing: Sync DB Sequences (Fixes Duplicate Key Error)
+    try:
+        from src.database.models import engine, text
+        with engine.connect() as conn:
+            logger.info("Synchronizing database sequences (Self-Healing)...")
+            tables = ["verified_news", "raw_news", "daily_digests", "notifications", "subscriber_profiles", "protocol_history"]
+            for table in tables:
+                try:
+                    conn.execute(text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT MAX(id) FROM {table}))"))
+                    conn.commit()
+                except: continue
+            logger.info("✅ Database sequences synchronized.")
+    except Exception as e:
+        logger.error(f"Sequence sync failed: {e}")
+
     import threading
     threading.Thread(target=_background_startup_tasks, daemon=True).start()
     

@@ -107,44 +107,43 @@ class NewsCollector:
                 except Exception as ce:
                     logger.warning(f"Failed to fetch news for {country_code}: {ce}")
 
-            saved_count = self._save_articles(all_articles)
-            return saved_count
+            stats = self._save_articles(all_articles)
+            return stats
             
         except Exception as e:
             logger.error(f"Error fetching news: {e}")
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
 
-    def _save_articles(self, articles: List[Dict[str, Any]]) -> int:
-        session = SessionLocal()
+    def _save_articles(self, articles: List[Dict[str, Any]]) -> Dict[str, int]:
         count = 0
+        dupe_count = 0
         seen_urls = set()
-        try:
-            for article in articles:
+        
+        for article in articles:
+            session = SessionLocal()
+            try:
                 url = article.get('url')
-                if not url:
+                if not url or url in seen_urls:
                     continue
                 
                 # Check for duplicates
-                # Check for duplicates (DB + Current Batch)
-                if url in seen_urls:
-                    continue
-                
                 exists = session.query(RawNews).filter(RawNews.url == url).first()
                 if exists:
+                    dupe_count += 1
+                    seen_urls.add(url)
                     continue
                 
-                seen_urls.add(url)
+                # ... same saving logic
+                # (Skipping middle code for brevity in tool call, 
+                # but making sure the replacement is robust)
                 
                 # Parse date
                 pub_date = article.get('publishedAt')
+                pub_dt = datetime.utcnow()
                 if pub_date:
                     try:
-                        # NewsAPI format: 2024-01-23T12:00:00Z
                         pub_dt = datetime.strptime(pub_date, "%Y-%m-%dT%H:%M:%SZ")
-                    except ValueError:
-                        pub_dt = datetime.utcnow()
-                else:
-                    pub_dt = datetime.utcnow()
+                    except ValueError: pass
 
                 raw_news = RawNews(
                     source_id=article.get('source', {}).get('id'),
@@ -159,17 +158,20 @@ class NewsCollector:
                     country=article.get('target_country')
                 )
                 session.add(raw_news)
+                session.commit()
+                seen_urls.add(url)
                 count += 1
-            
-            session.commit()
-            logger.info(f"Saved {count} new articles.")
-            return count
-        except Exception as e:
-            logger.error(f"Database error: {e}")
-            session.rollback()
-            return 0
-        finally:
-            session.close()
+            except Exception as e:
+                session.rollback()
+                if "UniqueViolation" not in str(e) and "Duplicate" not in str(e):
+                    logger.warning(f"Error saving article {article.get('title')}: {e}")
+            finally:
+                session.close()
+        
+        stats = {"new": count, "duplicates": dupe_count, "total": len(articles)}
+        if count > 0:
+            logger.info(f"Successfully saved {count} new articles to intelligence node (Duplicates skipped: {dupe_count}).")
+        return stats
 
 if __name__ == "__main__":
     # Test run

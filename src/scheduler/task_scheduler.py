@@ -27,14 +27,13 @@ async def run_news_cycle():
         # 1. Collect
         logger.info("Step 1: Collection")
         
-        api_count = rss_count = twitter_count = trending_count = gnews_count = 0
-        
+        # 1. Individual Collector Stats
         api_collector = NewsCollector()
-        api_count = api_collector.fetch_recent_news()
+        api_res = api_collector.fetch_recent_news() # {new: X, duplicates: Y, total: Z}
         
         from src.collectors.rss_collector import RSSCollector
         rss_collector = RSSCollector()
-        rss_count = rss_collector.fetch_recent_news()
+        rss_count = rss_collector.fetch_recent_news() # Still returns int for now, but we'll convert
         
         twitter_collector = TwitterCollector()
         twitter_count = twitter_collector.fetch_top_updates()
@@ -42,16 +41,23 @@ async def run_news_cycle():
         social_collector = SocialMediaCollector()
         trending_count = social_collector.fetch_trending_india()
 
-
-        
         from src.collectors.gnews_collector import GNewsCollector
         gnews_collector = GNewsCollector()
-        gnews_count = gnews_collector.fetch_country_news()
+        gnews_res = gnews_collector.fetch_country_news() # {new: X, duplicates: Y, total: Z}
+
+        from src.collectors.newsdata_collector import NewsDataCollector
+        newsdata_collector = NewsDataCollector()
+        newsdata_res = newsdata_collector.fetch_student_focus_news() # {new: X, duplicates: Y, total: Z}
         
-        total_count = api_count + rss_count + twitter_count + trending_count + gnews_count
-        logger.info(f"Collected {total_count} new articles (incl. {gnews_count} GNews, {twitter_count} Twitter, {trending_count} Trending).")
+        # 2. Aggregation Logic
+        new_count = api_res["new"] + rss_count + twitter_count + trending_count + gnews_res["new"] + newsdata_res["new"]
+        dupe_count = api_res["duplicates"] + gnews_res["duplicates"] + newsdata_res["duplicates"]
+        total_api_checked = api_res["total"] + gnews_res["total"] + newsdata_res["total"]
+
+        logger.info(f"News Cycle: Checked {total_api_checked} sources, found {dupe_count} duplicates.")
+        logger.info(f"Intelligence Update: Saved {new_count} new articles (NewsData: {newsdata_res['new']}, GNews: {gnews_res['new']}, NewsAPI: {api_res['new']}).")
         
-        if total_count == 0 and db.query(RawNews).count() == 0:
+        if new_count == 0 and db.query(RawNews).count() == 0:
             logger.warning("No news collected and DB is empty. Aborting cycle.")
             return
 
@@ -167,7 +173,11 @@ async def run_news_cycle():
             await check_topic_tracking(db)
 
     except Exception as e:
-        logger.error(f"Error in news cycle: {e}", exc_info=True)
+        logger.error("Error in news cycle: {error}", error=str(e), exc_info=True)
+        # Re-read if it was just a transient DB error
+        if "psycopg2" in str(e).lower() or "connection" in str(e).lower():
+            import asyncio
+            await asyncio.sleep(2)
     finally:
         db.close()
         logger.info("News Cycle Completed.")

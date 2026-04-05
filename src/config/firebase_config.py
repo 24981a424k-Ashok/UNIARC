@@ -91,8 +91,17 @@ def verify_token(id_token: str):
             os.environ["FIREBASE_PROJECT_ID"] = project_id
 
         # Pass the explicit app instance to verify_id_token
-        decoded_token = auth.verify_id_token(id_token, app=_firebase_app)
-        return decoded_token
+        try:
+            decoded_token = auth.verify_id_token(id_token, app=_firebase_app)
+            return decoded_token
+        except Exception as e:
+            # Handle clock skew (Token used too early)
+            if "used too early" in str(e).lower():
+                import time
+                logger.warning(f"Clock skew detected (token used too early). Retrying in 5s...")
+                time.sleep(5)
+                return auth.verify_id_token(id_token, app=_firebase_app)
+            raise e
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
         return None

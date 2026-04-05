@@ -105,17 +105,21 @@ class GNewsCollector:
                     response = requests.get(f"{self.base_url}/{endpoint}", params=params)
                     if response.status_code == 200:
                         articles = response.json().get('articles', [])
-                        total_saved += self._save_articles(articles, country)
+                        stats = self._save_articles(articles, country)
+                        total_stats["new"] += stats["new"]
+                        total_stats["duplicates"] += stats["duplicates"]
+                        total_stats["total"] += stats["total"]
                     else:
                         logger.error(f"GNews error for {country} ({endpoint}): {response.status_code} - {response.text}")
             except Exception as e:
                 logger.error(f"GNews fetch failed for {country}: {e}")
         
-        return total_saved
+        return total_stats
 
-    def _save_articles(self, articles: List[Dict[str, Any]], country_code: str) -> int:
+    def _save_articles(self, articles: List[Dict[str, Any]], country_code: str) -> Dict[str, int]:
         session = SessionLocal()
         count = 0
+        dupe_count = 0
         try:
             for article in articles:
                 url = article.get('url')
@@ -125,6 +129,7 @@ class GNewsCollector:
                 # Check for duplicates
                 exists = session.query(RawNews).filter(RawNews.url == url).first()
                 if exists:
+                    dupe_count += 1
                     continue
                 
                 # GNews date format: 2024-02-13T12:00:00Z
@@ -149,12 +154,14 @@ class GNewsCollector:
                 count += 1
             
             session.commit()
-            logger.info(f"GNews: Saved {count} articles for {country_code}.")
-            return count
+            stats = {"new": count, "duplicates": dupe_count, "total": len(articles)}
+            if count > 0:
+                logger.info(f"GNews: Saved {count} articles for {country_code} (Skipped {dupe_count} duplicates).")
+            return stats
         except Exception as e:
             logger.error(f"GNews database error: {e}")
             session.rollback()
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
         finally:
             session.close()
 
