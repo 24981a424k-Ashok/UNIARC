@@ -1,8 +1,10 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-# 1. Get Database URL directly from environment to break circular imports
+# 1. Load environment first to ensure DATABASE_URL is available
+load_dotenv()
 DATA_DIR = os.getenv("DATA_DIR_PATH", "data")
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DATA_DIR}/news.db")
 
