@@ -11,9 +11,11 @@ _init_lock = threading.Lock()
 def initialize_firebase():
     """
     100% Stable 'Fresh Start' Firebase initialization.
-    Prioritizes Local File (Robust) -> Individual ENV Keys (Safe).
+    Prioritizes Local File (Robust) -> Individual DB/ENV Keys (Safe).
     """
     global _firebase_app
+    from src.utils.secret_manager import SecretManager
+    
     with _init_lock:
         try:
             # 1. Check if already initialized
@@ -26,7 +28,7 @@ def initialize_firebase():
                 pass 
 
             # 2. PRIORITY: Native Cert Load (Most Stable)
-            cert_path = os.getenv("FIREBASE_SERVICE_ACCOUNT_PATH", "service-account.json")
+            cert_path = SecretManager.get("FIREBASE_SERVICE_ACCOUNT_PATH", "service-account.json")
             if os.path.exists(cert_path):
                 try:
                     cred = credentials.Certificate(cert_path)
@@ -34,20 +36,20 @@ def initialize_firebase():
                     logger.info(f"Firebase initialized via Stable File: {cert_path}")
                     return _firebase_app
                 except Exception as e:
-                    logger.warning(f"File init failed: {e}. Falling back to Individual ENV...")
+                    logger.warning(f"File init failed: {e}. Falling back to Individual Keys...")
 
-            # 3. FALLBACK: Individual ENV Keys (Manual Re-Wrapping)
+            # 3. FALLBACK: Individual DB/ENV Keys (Manual Re-Wrapping)
             config = {
                 "type": "service_account",
-                "project_id": os.getenv("FIREBASE_PROJECT_ID"),
-                "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
-                "private_key": os.getenv("FIREBASE_PRIVATE_KEY"),
-                "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
-                "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+                "project_id": SecretManager.get("FIREBASE_PROJECT_ID"),
+                "private_key_id": SecretManager.get("FIREBASE_PRIVATE_KEY_ID"),
+                "private_key": SecretManager.get("FIREBASE_PRIVATE_KEY"),
+                "client_email": SecretManager.get("FIREBASE_CLIENT_EMAIL"),
+                "client_id": SecretManager.get("FIREBASE_CLIENT_ID"),
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
                 "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_CERT_URL")
+                "client_x509_cert_url": SecretManager.get("FIREBASE_CLIENT_CERT_URL")
             }
 
             if config["private_key"]:
@@ -63,10 +65,10 @@ def initialize_firebase():
                 try:
                     cred = credentials.Certificate(config)
                     _firebase_app = firebase_admin.initialize_app(cred)
-                    logger.info("Firebase initialized via Strict-Wrapped ENV Keys.")
+                    logger.info("Firebase initialized via Strict-Wrapped DB/ENV Keys.")
                     return _firebase_app
                 except Exception as e:
-                    logger.error(f"ENV initialization FAILED: {e}")
+                    logger.error(f"DB/ENV initialization FAILED: {e}")
 
             # 4. FINAL FALLBACK: Default Credentials
             _firebase_app = firebase_admin.initialize_app()
@@ -81,10 +83,11 @@ def verify_token(id_token: str):
     """
     Verify a Firebase ID token.
     """
+    from src.utils.secret_manager import SecretManager
     try:
         # Ensure initialized
         initialize_firebase()
-        project_id = os.getenv("FIREBASE_PROJECT_ID")
+        project_id = SecretManager.get("FIREBASE_PROJECT_ID")
         # Guarantee project ID is in environment for the SDK's internal lookups
         if project_id and not os.environ.get("GOOGLE_CLOUD_PROJECT"):
             os.environ["GOOGLE_CLOUD_PROJECT"] = project_id

@@ -50,14 +50,16 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting AI News Intelligence Agent...")
 
-    # Environment Check
+    # Environment Check (Checking through SecretManager which handles DB + Env)
+    from src.utils.secret_manager import SecretManager
+    
     required_keys = ["OPENAI_API_KEY", "NEWS_API_KEY"]
-    missing_keys = [key for key in required_keys if not os.getenv(key)]
+    missing_keys = [key for key in required_keys if not SecretManager.get(key)]
     if missing_keys:
         logger.warning(f"⚠️  MISSING CRITICAL KEYS: {', '.join(missing_keys)}. Analysis and collection may fail or use mocks.")
     
-    if not os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON") and not os.path.exists("service-account.json"):
-         logger.warning("⚠️  No Firebase credentials found (JSON env or file). Database/App sync might fail.")
+    if not SecretManager.get("FIREBASE_SERVICE_ACCOUNT_JSON") and not os.path.exists("service-account.json") and not SecretManager.get("FIREBASE_PRIVATE_KEY"):
+         logger.warning("⚠️  No Firebase credentials found (DB, ENV, or file). Database/App sync might fail.")
     
     # Initialize DB
     init_db()
