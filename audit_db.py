@@ -1,18 +1,29 @@
-from src.database.models import SessionLocal, VerifiedNews
-from sqlalchemy import func
+from sqlalchemy import inspect
+from src.database.models import engine, Base
 
-def audit_categories():
-    db = SessionLocal()
-    try:
-        counts = db.query(VerifiedNews.category, func.count(VerifiedNews.id)).group_by(VerifiedNews.category).all()
-        print("Category distribution in VerifiedNews:")
-        for cat, count in counts:
-            print(f"- {cat or 'None'}: {count}")
-            
-        total = db.query(VerifiedNews).count()
-        print(f"\nTotal Verified Articles: {total}")
-    finally:
-        db.close()
+def audit():
+    inspector = inspect(engine)
+    db_tables = inspector.get_table_names()
+    
+    print("--- Database Audit ---")
+    for table_name in db_tables:
+        columns = [c['name'] for c in inspector.get_columns(table_name)]
+        print(f"Table: {table_name}")
+        print(f"Columns: {columns}")
+        print("-" * 20)
+
+    print("\n--- Model Check ---")
+    for table_name, table_obj in Base.metadata.tables.items():
+        model_cols = [c.name for c in table_obj.columns]
+        if table_name in db_tables:
+            db_cols = [c['name'] for c in inspector.get_columns(table_name)]
+            missing = set(model_cols) - set(db_cols)
+            if missing:
+                print(f"!!! TABLE {table_name} MISSING COLUMNS: {missing}")
+            else:
+                print(f"Table {table_name} matches model.")
+        else:
+            print(f"!!! TABLE {table_name} MISSING FROM DB")
 
 if __name__ == "__main__":
-    audit_categories()
+    audit()

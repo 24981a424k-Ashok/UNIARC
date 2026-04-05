@@ -26,15 +26,19 @@ class DigestGenerator:
                 .order_by(VerifiedNews.created_at.desc()).limit(20).all()
             regional_news.extend(country_specific)
         
-        # Merge and deduplicate
+        # Merge and deduplicate by ID and Title Similarity
         seen_ids = set()
+        seen_titles = set()
         recent_news = []
         for n in global_news + regional_news:
-            if n.id not in seen_ids:
+            # Clean title for deduplication
+            title_clean = "".join(filter(str.isalnum, (n.title or "").lower()))
+            if n.id not in seen_ids and title_clean not in seen_titles:
                 recent_news.append(n)
                 seen_ids.add(n.id)
+                seen_titles.add(title_clean)
         
-        logger.info(f"Digest: Fetched {len(recent_news)} articles (Global: {len(global_news)}, Regional: {len(regional_news)})")
+        logger.info(f"Digest: Fetched {len(recent_news)} articles (Global: {len(global_news)}, Regional: {len(regional_news)}) after deduplication")
         logger.info(f"recent_news count: {len(recent_news)}")
         countries_found = [n.country for n in recent_news if n.country]
         logger.info(f"Countries in recent_news: {set(countries_found)}")
@@ -272,7 +276,9 @@ class DigestGenerator:
 
             # Add to category
             if cat and cat in categories:
-                categories[cat].append(item_data)
+                # Ensure we don't over-fill one category at the expense of others initially
+                if len(categories[cat]) < 20:
+                    categories[cat].append(item_data)
             
             # Add to Global bucket if no country
             if not n.country:

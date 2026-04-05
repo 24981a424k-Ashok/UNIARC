@@ -5,50 +5,104 @@ import asyncio
 from datetime import datetime
 from typing import List, Dict, Any
 import openai
-from src.config.settings import OPENAI_API_KEY
+from src.config import settings
+from src.config.settings import OPENAI_API_KEY, GROQ_API_KEY, TRANSLATION_KEYS, GROQ_API_KEYS
 
 # logger = logging.getLogger(__name__) # Removed standard logging
 
 class LLMAnalyzer:
     def __init__(self):
-        self.api_key = OPENAI_API_KEY
-        if not self.api_key:
-            logger.warning("OpenAI API Key missing! LLM analysis will be skipped/mocked.")
+        # 1. Gather all available keys from settings
+        self.openai_keys = [OPENAI_API_KEY] + getattr(settings, 'TRANSLATION_KEYS', [])
+        self.openai_keys = [k for k in self.openai_keys if k]
+        
+        self.groq_keys = [GROQ_API_KEY] + getattr(settings, 'GROQ_API_KEYS', [])
+        self.groq_keys = [k for k in self.groq_keys if k]
+        
+        if not self.openai_keys and not self.groq_keys:
+            logger.warning("All LLM API Keys missing! LLM analysis will be skipped/mocked.")
             self.client = None
         else:
-            self.client = openai.OpenAI(api_key=self.api_key)
+            logger.info(f"LLMAnalyzer initialized with {len(self.openai_keys)} OpenAI keys and {len(self.groq_keys)} Groq keys for rotation.")
+
+    def _get_openai_client(self, index=0):
+        """Get an OpenAI client for a specific key in the pool."""
+        if not self.openai_keys: return None
+        key = self.openai_keys[index % len(self.openai_keys)]
+        return openai.OpenAI(api_key=key)
+
+    async def _get_async_client(self, provider="openai", index=0):
+        """Get an Async OpenAI/Groq client for rotation."""
+        from openai import AsyncOpenAI
+        if provider == "openai" and self.openai_keys:
+            key = self.openai_keys[index % len(self.openai_keys)]
+            return AsyncOpenAI(api_key=key)
+        elif provider == "groq" and self.groq_keys:
+            key = self.groq_keys[index % len(self.groq_keys)]
+            return AsyncOpenAI(api_key=key, base_url="https://api.groq.com/openai/v1")
+        return None
 
     async def analyze_batch(self, articles: List[Dict[str, str]], is_sports: bool = False) -> List[Dict[str, Any]]:
         """
-        Analyze multiple articles in parallel.
-        Uses a fresh client per batch to avoid loop mismatch and closure issues.
+        Analyze multiple articles in parallel with automated key rotation and cross-provider fallback.
         """
-        if not self.api_key:
-            return [self._mock_analysis(a["title"]) for a in articles]
-
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=self.api_key)
+        # Try OpenAI Keys (Rotation)
+        for i in range(len(self.openai_keys)):
+            client = await self._get_async_client("openai", i)
+            try:
+                tasks = [self._analyze_single_with_fallback(a, client, is_sports) for a in articles]
+                results = await asyncio.gather(*tasks)
+                await client.close()
+                return results
+            except Exception as e:
+                await client.close()
+                if "quota" in str(e).lower() or "429" in str(e):
+                    logger.warning(f"OpenAI Key #{i+1} quota hit. Rotating...")
+                    continue
+                logger.error(f"Batch analysis error on OpenAI Key #{i+1}: {e}")
         
+        # Fallback to Groq Keys (Rotation)
+        for j in range(len(self.groq_keys)):
+            logger.info(f"Using Groq Key #{j+1} fallback for batch analysis.")
+            client = await self._get_async_client("groq", j)
+            try:
+                model = "llama-3.3-70b-versatile"
+                tasks = [self._analyze_single_with_fallback(a, client, is_sports, model=model) for a in articles]
+                results = await asyncio.gather(*tasks)
+                await client.close()
+                return results
+            except Exception as e:
+                await client.close()
+                logger.error(f"Groq Key #{j+1} failed: {e}")
+                continue
+
+        return [self._mock_analysis(a["title"]) for a in articles]
+
+    async def _analyze_single_with_fallback(self, article: Dict[str, str], client, is_sports: bool, model: str = None) -> Dict[str, Any]:
+        """Wrapper for single analysis to handle internal retries or fallbacks if needed."""
         try:
             if is_sports:
-                tasks = [self._analyze_sports_single(a, client) for a in articles]
+                return await self._analyze_sports_single(article, client, model=model or "gpt-4o-mini")
             else:
-                tasks = [self._analyze_single(a, client) for a in articles]
-            results = await asyncio.gather(*tasks)
-            return results
+                return await self._analyze_single(article, client, model=model or "gpt-4o-mini")
         except Exception as e:
-            if "quota" not in str(e).lower() and "429" not in str(e):
-                logger.error(f"Batch analysis crash: {e}")
-            return [self._mock_analysis(a["title"]) for a in articles]
-        finally:
-            await client.close()
+            # If it's a quota error and we are on OpenAI, we let the batch level handle fallback
+            # but if it's already Groq or a different error, we log and mock.
+            if "quota" in str(e).lower() or "429" in str(e):
+                raise e # Bubble up for Groq switch
+            logger.error(f"Single analysis failed for '{article['title']}': {e}")
+            return self._mock_analysis(article["title"])
 
-    async def _analyze_sports_single(self, article: Dict[str, str], client) -> Dict[str, Any]:
+    async def _analyze_sports_single(self, article: Dict[str, str], client, model: str = "gpt-4o-mini") -> Dict[str, Any]:
         """Specialized Sports News Editor AI analysis."""
         title = article["title"]
         content = article.get("content", "")
         source = article.get("source_name", "Source")
         timestamp = datetime.utcnow().isoformat()
+        
+        # Adjust model for Groq if detected
+        if "groq.com" in str(client.base_url):
+             model = "llama-3.3-70b-versatile"
 
         prompt = f"""
 You are a Sports News Editor AI for a professional news platform.
@@ -112,8 +166,8 @@ Generate JSON with:
 2. sports_type: String
 3. headline: String (factual, neutral)
 4. key_facts: List of 2–4 bullet points
-5. why_it_matters: String (Impact on team, player, tournament, or fans)
-6. who_is_affected: String (Specific athletes, teams, or fans impacted)
+5. why_it_matters: String (Detailed analysis of impact on team, player, tournament, or fans. Provide exactly 3-4 professional lines.)
+6. who_is_affected: String (Specific athletes, teams, or fans impacted with detailed reasoning. Provide exactly 3-4 professional lines.)
 7. next_update: String (label uncertainty clearly)
 8. urgency_tag: String (from rules above)
 9. category: "Sports" (if sports)
@@ -124,7 +178,7 @@ IMPORTANT: Output ONLY valid JSON.
 """
         try:
             response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[
                     {"role": "system", "content": "You are a professional Sports News Editor AI. Output ONLY JSON."},
                     {"role": "user", "content": prompt}
@@ -148,14 +202,20 @@ IMPORTANT: Output ONLY valid JSON.
             
             return result
         except Exception as e:
+            if "quota" in str(e).lower() or "429" in str(e):
+                raise e # Trigger Groq fallback in analyze_batch
             logger.error(f"Sports analysis failed for '{title}': {e}")
             return self._mock_analysis(title)
 
 
-    async def _analyze_single(self, article: Dict[str, str], client) -> Dict[str, Any]:
+    async def _analyze_single(self, article: Dict[str, str], client, model: str = "gpt-4o-mini") -> Dict[str, Any]:
         title = article["title"]
         content = article.get("content", "")
         
+        # Adjust model for Groq if detected
+        if "groq.com" in str(client.base_url):
+             model = "llama-3.3-70b-versatile"
+
         prompt = f"""
         Analyze the following news article:
         Title: {title}
@@ -164,7 +224,9 @@ IMPORTANT: Output ONLY valid JSON.
         TASK:
         Generate a JSON output with:
         PART 1: INDUSTRY INTELLIGENCE REPORT
-        - regulatory_changes, market_impact_short, market_impact_long, competitors, strategic_signals, recommendations, confidence_level, who_is_affected_details.
+        - regulatory_changes, market_impact_short, market_impact_long, competitors, strategic_signals, recommendations, confidence_level.
+        - who_is_affected_details: String (Provide exactly 3-4 insightful lines about who is impacted).
+        - why_it_matters_details: String (Provide exactly 3-4 insightful lines about the strategic significance).
         
         PART 2: DASHBOARD METADATA
         - category, impact_score (1-10), sentiment, summary_bullets (5-7 points), bias_rating, primary_geography (e.g. India, USA, China, Japan, Global).
@@ -173,13 +235,12 @@ IMPORTANT: Output ONLY valid JSON.
         - Detect the language of the article content (e.g. Japanese, Chinese, Arabic).
         - IMPORTANT: If the article is NOT in English, you MUST provide 'headline', 'summary_bullets', 'why_it_matters', and 'who_is_affected_details' in BOTH the native language AND English.
         - Format for non-English: "English Title (Native Title)" or "English Bullet Point (Native Bullet)".
-        - This ensures the English dashboard remains functional while preserving authenticity.
         
         Output ONLY valid JSON.
         """
         try:
             response = await client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[
                     {"role": "system", "content": "You are a professional industry analyst. Output ONLY JSON."},
                     {"role": "user", "content": prompt}
@@ -199,7 +260,7 @@ IMPORTANT: Output ONLY valid JSON.
             result = json.loads(raw_content)
             
             # Ensure mandatory fields for UI compatibility
-            result["why_it_matters"] = f"Strategy: {result.get('strategic_signals', '')}\n\nPolicy: {result.get('regulatory_changes', '')}"
+            result["why_it_matters"] = result.get('why_it_matters_details') or f"Strategy: {result.get('strategic_signals', '')}\n\nPolicy: {result.get('regulatory_changes', '')}"
             result["who_is_affected"] = result.get('who_is_affected_details', result.get('competitors', 'General Public'))
             result["short_term_impact"] = result.get('market_impact_short', 'Immediate awareness.')
             result["long_term_impact"] = result.get('market_impact_long', 'Future policy shifts.')
@@ -208,7 +269,7 @@ IMPORTANT: Output ONLY valid JSON.
             return result
         except Exception as e:
             if "quota" in str(e).lower() or "429" in str(e):
-                logger.info(f"OpenAI Quota reached. Using mock for: {title}")
+                 raise e # Trigger Groq fallback in analyze_batch
             else:
                 logger.error(f"Analysis failed for '{title}': {e}")
             return self._mock_analysis(title)
@@ -337,23 +398,46 @@ IMPORTANT: Output ONLY valid JSON.
         return self._mock_analysis(title) # Default to mock for sync to keep it simple and robust
 
     def get_completion(self, prompt: str) -> str:
-        """Synchronous generation for internal tools like ExamGenerator."""
-        if not self.client:
-            raise Exception("OpenAI Client not initialized")
+        """Synchronous generation with full pool rotation and Groq fallback."""
+        # 1. Try OpenAI Keys (Rotation)
+        for i, key in enumerate(self.openai_keys):
+            try:
+                temp_client = openai.OpenAI(api_key=key)
+                response = temp_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a professional AI assistant. Output ONLY requested data."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                if "quota" in str(e).lower() or "429" in str(e):
+                    logger.warning(f"Completion OpenAI Key #{i+1} quota hit. Rotating...")
+                    continue
+                logger.error(f"Completion error on OpenAI Key #{i+1}: {e}")
+                break
         
-        try:
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI assistant."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.3
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            logger.error(f"LLM Completion failed: {e}")
-            raise e
+        # 2. Fallback to Groq Keys (Rotation)
+        for j, gkey in enumerate(self.groq_keys):
+            try:
+                logger.info(f"Using Groq Key #{j+1} fallback for completion.")
+                temp_client = openai.OpenAI(api_key=gkey, base_url="https://api.groq.com/openai/v1")
+                response = temp_client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {"role": "system", "content": "You are a professional AI assistant. Output ONLY requested data."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.3
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                logger.error(f"Groq Completion Key #{j+1} also failed: {e}")
+                continue
+        
+        raise Exception("No API keys available for completion in the entire pool.")
 
     def _mock_analysis(self, title: str) -> Dict[str, Any]:
         """High-quality keyword fallback."""

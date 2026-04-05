@@ -113,6 +113,41 @@ class DailyDigest(Base):
     content_json = Column(JSON) # Full structured digest
     is_published = Column(Boolean, default=False)
 
+class TopicTracking(Base):
+    __tablename__ = "topic_tracking"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    news_id = Column(Integer, ForeignKey("verified_news.id"), nullable=True)
+    topic_keywords = Column(JSON) # ["AI", "Nvidia"]
+    language = Column(String, default="english")
+    notify_sms = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", back_populates="tracked_topics")
+    news = relationship("VerifiedNews")
+
+class TrackNotification(Base):
+    __tablename__ = "track_notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    news_id = Column(Integer, ForeignKey("verified_news.id"))
+    notified_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User")
+    news = relationship("VerifiedNews")
+
+class OTPVerification(Base):
+    __tablename__ = "otp_verifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    phone = Column(String, index=True)
+    otp_code = Column(String)
+    expires_at = Column(DateTime)
+    is_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class User(Base):
     __tablename__ = "users"
 
@@ -123,14 +158,22 @@ class User(Base):
     push_token = Column(String, nullable=True)
     bounty_points = Column(Integer, default=0)
     preferred_language = Column(String, default="english")
+    bio = Column(Text, nullable=True)
+    profile_image_url = Column(String, nullable=True)
+    
+    # Premium Streak & Rewards
+    current_streak = Column(Integer, default=0)
+    streak_history = Column(JSON, default=dict) # e.g. {"2026-04-04": "success", "2026-04-03": "missed"}
+    subscription_status = Column(String, default="free") # "free", "premium_eligible", "activated"
+    
+    last_active_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     subscriptions = relationship("Subscription", back_populates="user")
     folders = relationship("Folder", back_populates="user")
     saved_articles = relationship("SavedArticle", back_populates="user")
     read_history = relationship("ReadHistory", back_populates="user")
-    current_streak = Column(Integer, default=0)
-    last_active_date = Column(DateTime, nullable=True)
+    tracked_topics = relationship("TopicTracking", back_populates="user")
 
 class Subscription(Base):
     __tablename__ = "subscriptions"

@@ -1,28 +1,27 @@
-import sqlite3
-import os
+from sqlalchemy import inspect
+from src.database.models import engine, Base
 
-db_path = "c:/Users/CH ASHOK REDDY/OneDrive/Desktop/VibeCoding/ai-news-agent/data/news.db"
+def audit():
+    inspector = inspect(engine)
+    db_tables = inspector.get_table_names()
+    
+    mismatches = []
+    print("Checking database for mismatches...")
+    for table_name, table_obj in Base.metadata.tables.items():
+        model_cols = [c.name for c in table_obj.columns]
+        if table_name in db_tables:
+            db_cols = [c['name'] for c in inspector.get_columns(table_name)]
+            missing = set(model_cols) - set(db_cols)
+            if missing:
+                mismatches.append(f"Table {table_name} MISSING COLUMNS: {missing}")
+        else:
+            mismatches.append(f"Table {table_name} MISSING FROM DB")
 
-def audit_db():
-    if not os.path.exists(db_path):
-        print("DB not found.")
-        return
-    
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    tables = [t[0] for t in cursor.fetchall()]
-    print(f"Tables: {tables}")
-    
-    for table in tables:
-        print(f"\nColumns in '{table}':")
-        cursor.execute(f"PRAGMA table_info({table});")
-        cols = cursor.fetchall()
-        for col in cols:
-            print(f" - {col[1]} ({col[2]})")
-            
-    conn.close()
+    if not mismatches:
+        print("ALL TABLES AND COLUMNS MATCH THE MODELS.")
+    else:
+        for m in mismatches:
+            print(m)
 
 if __name__ == "__main__":
-    audit_db()
+    audit()

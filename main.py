@@ -17,7 +17,7 @@ from fastapi import FastAPI, Request, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import FileResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from loguru import logger
 import sys
 

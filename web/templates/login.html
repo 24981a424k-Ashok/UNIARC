@@ -413,71 +413,52 @@
             authTitle.innerText = isRegisterMode ? 'Sign up' : 'Sign in';
         };
 
+        // Twilio Phone Auth (Custom)
         btnPhoneSubmit.onclick = async () => {
-            if (!confirmationResult) {
-                let rawInput = document.getElementById('phone-number').value.trim();
-                if (!rawInput) return alert("Please enter a mobile number.");
+            const phoneInput = document.getElementById('phone-number').value.trim();
+            if (!phoneInput) return alert("Please enter a mobile number.");
 
-                // Keep only digits for analysis
-                let digitsOnly = rawInput.replace(/\D/g, '');
-                let phoneNumber = "";
-
-                if (rawInput.startsWith('+')) {
-                    // If they entered a +, use the raw input digits with a leading +
-                    phoneNumber = '+' + digitsOnly;
-                } else if (digitsOnly.length === 10) {
-                    // Standard 10 digits
-                    phoneNumber = '+91' + digitsOnly;
-                } else if (digitsOnly.length === 12 && digitsOnly.startsWith('91')) {
-                    // 12 digits starting with 91
-                    phoneNumber = '+' + digitsOnly;
-                } else if (digitsOnly.length === 11 && digitsOnly.startsWith('0')) {
-                    // 11 digits starting with 0
-                    phoneNumber = '+91' + digitsOnly.substring(1);
-                } else {
-                    // Fallback for other lengths
-                    if (digitsOnly.length < 10) {
-                        alert("The number entered is too short. Please enter a 10-digit mobile number.");
-                        return;
-                    }
-                    phoneNumber = '+91' + digitsOnly;
-                }
-
-                // Final safety check for TOO_SHORT (India specific: +91 + 10 digits = 13 chars)
-                if (phoneNumber.length < 13) {
-                    alert("Invalid format. Please enter a full 10-digit mobile number. Current: " + phoneNumber);
-                    return;
-                }
-
-                console.log("Sending to Firebase:", phoneNumber);
-
+            if (btnPhoneSubmit.innerText === 'Send Code') {
+                setLoading(btnPhoneSubmit, true);
                 try {
-                    confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
-                    otpGroup.style.display = 'block';
-                    btnPhoneSubmit.innerText = 'Verify OTP';
-                } catch (error) {
-                    console.error("Phone Auth Error 상세:", error);
-                    if (error.code === 'auth/billing-not-enabled') {
-                        alert("FAILED: Firebase Billing Not Enabled.\n\nTo use real SMS OTP, you must upgrade your Firebase project to the 'Blaze' plan.\n\nAlternatively, for testing, you can add a 'Test Phone Number' in your Firebase Console (Authentication > Settings > Phone) and use it for free without billing.");
-                        console.warn("User needs to enable billing or use test numbers: https://console.firebase.google.com/project/_/authentication/providers");
+                    const response = await fetch('/api/auth/twilio/send-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: phoneInput })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success') {
+                        otpGroup.style.display = 'block';
+                        btnPhoneSubmit.innerText = 'Verify OTP';
+                        alert("OTP sent to your mobile number via Twilio.");
                     } else {
-                        alert("Authentication Error: " + error.message);
+                        alert("Failed to send OTP: " + data.detail);
                     }
-                    if (window.recaptchaVerifier) {
-                        window.recaptchaVerifier.render().then(widgetId => grecaptcha.reset(widgetId));
-                    }
+                } catch (error) {
+                    alert("Error: " + error.message);
                 } finally {
                     setLoading(btnPhoneSubmit, false);
                 }
             } else {
-                const code = document.getElementById('verification-code').value.trim();
-                if (!code) return alert("Enter the verification code");
+                const otp = document.getElementById('verification-code').value.trim();
+                if (!otp) return alert("Please enter the verification code.");
+                
                 setLoading(btnPhoneSubmit, true);
                 try {
-                    const result = await confirmationResult.confirm(code);
-                    await sendTokenToServer(result.user);
+                    const response = await fetch('/api/auth/twilio/verify-otp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ phone: phoneInput, otp: otp })
+                    });
+                    const data = await response.json();
+                    if (data.status === 'success' && data.firebase_uid) {
+                        // Redirect to dashboard with UID (backend will handle session or frontend will use this UID)
+                        window.location.href = `/dashboard?uid=${data.firebase_uid}&lang=english`;
+                    } else {
+                        alert("Verification failed: " + (data.detail || "Invalid OTP"));
+                    }
                 } catch (error) {
-                    alert("Invalid code: " + error.message);
+                    alert("Error: " + error.message);
                 } finally {
                     setLoading(btnPhoneSubmit, false);
                 }

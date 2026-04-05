@@ -656,20 +656,147 @@ async function saveArticleModal() {
 }
 
 async function trackHistory(newsId) {
-    const user = firebase.auth().currentUser;
-    if (!user || !newsId) return;
+    const uid = (firebase.auth().currentUser ? firebase.auth().currentUser.uid : null) || localStorage.getItem('user_uid');
+    if (!uid || !newsId) return;
 
     try {
         await fetch('/api/retention/history', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                firebase_uid: user.uid,
+                firebase_uid: uid,
                 news_id: parseInt(newsId)
             })
         });
-    } catch (e) { console.error("History track failed", e); }
+    } catch (e) {
+        console.error("History track failed", e);
+    }
 }
+
+async function shareArticle(event, id, title, url) {
+    if (event) event.stopPropagation();
+    const shareData = {
+        title: decodeURIComponent(title),
+        text: `Check out this intelligence artifact: ${decodeURIComponent(title)}`,
+        url: url
+    };
+
+    if (navigator.share) {
+        try {
+            await navigator.share(shareData);
+        } catch (err) {
+            console.log('Share failed:', err);
+            // Fallback to clipboard
+            copyToClipboard(url);
+        }
+    } else {
+        copyToClipboard(url);
+    }
+}
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert("Link copied to clipboard!");
+    }).catch(err => {
+        console.error('Could not copy text: ', err);
+    });
+}
+
+function closePhoneModal() {
+    const modal = document.getElementById('phone-collection-modal');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+
+async function trackTopic(event, newsId, title) {
+    if (event) event.stopPropagation();
+    
+    let uid = null;
+    const fbUser = firebase.auth().currentUser;
+    if (fbUser) {
+        uid = fbUser.uid;
+    } else {
+        uid = localStorage.getItem('user_uid');
+    }
+
+    if (!uid) {
+        alert("Identification required to track intelligence. Please sign in.");
+        return;
+    }
+
+    try {
+        // 1. Check if user already has a phone number
+        const statusRes = await fetch(`/api/user/status?firebase_uid=${uid}`);
+        const statusData = await statusRes.json();
+        
+        // Assume backend returns user object or phone status
+        // I'll update the /api/user/status endpoint to return 'phone' as well
+        if (!statusData.phone) {
+            // Show modal to collect phone
+            const modal = document.getElementById('phone-collection-modal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            
+            const confirmBtn = document.getElementById('confirm-phone-btn');
+            confirmBtn.onclick = async () => {
+                const phoneInput = document.getElementById('tracking-phone-input').value;
+                if (!phoneInput || !phoneInput.includes('+')) {
+                    alert("Please enter a valid phone number with country code (e.g. +91...)");
+                    return;
+                }
+                
+                confirmBtn.innerText = "WAIT...";
+                confirmBtn.disabled = true;
+                
+                try {
+                    // Update phone first
+                    await fetch('/api/user/update_phone', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ firebase_uid: uid, phone: phoneInput })
+                    });
+                    
+                    // Then track topic
+                    await executeTrackRequest(uid, newsId, title);
+                    closePhoneModal();
+                } catch (e) {
+                    alert("Failed to update phone strategy.");
+                } finally {
+                    confirmBtn.innerText = "START TRACKING";
+                    confirmBtn.disabled = false;
+                }
+            };
+            return;
+        }
+
+        // Already has phone, just track
+        await executeTrackRequest(uid, newsId, title);
+
+    } catch (e) {
+        console.error("Track failed", e);
+    }
+}
+
+async function executeTrackRequest(uid, newsId, title) {
+    const keywords = [decodeURIComponent(title)];
+    // Extract keywords if title is long? Simple for now.
+    
+    const res = await fetch('/api/user/track_topic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            firebase_uid: uid,
+            news_id: parseInt(newsId),
+            keywords: keywords
+        })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        alert("Topic tracking activated for 30 days. SMS alerts enabled!");
+    }
+}
+
+window.closePhoneModal = closePhoneModal;
 
 async function saveArticle(event, newsId) {
     event.stopPropagation(); // Prevent card click
@@ -706,9 +833,10 @@ async function saveArticle(event, newsId) {
 
 // Export to window for inline onclicks
 window.handleCardClick = handleCardClick;
-window.closeArticleModal = closeArticleModal;
 window.saveArticleModal = saveArticleModal;
 window.saveArticle = saveArticle;
+window.shareArticle = shareArticle;
+window.trackTopic = trackTopic;
 
 // ===== INITIALIZE ON PAGE LOAD =====
 document.addEventListener('DOMContentLoaded', function () {
@@ -716,7 +844,17 @@ document.addEventListener('DOMContentLoaded', function () {
     initializeThemeToggle();
     initializeBreakingNewsRefresh();
 
-    console.log('Dashboard enhancements initialized v4.1');
+    // Twilio Session Handling: Check for UID in URL from login redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUid = urlParams.get('uid');
+    if (urlUid) {
+        localStorage.setItem('user_uid', urlUid);
+        console.log("Twilio Session Activated for UID:", urlUid);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    console.log('Dashboard enhancements initialized v4.2');
 });
 
 
@@ -910,3 +1048,262 @@ window.toggleMobileMenu = function() {
     const nav = document.getElementById('mobile-nav-overlay');
     if (nav) nav.classList.toggle('active');
 };
+
+// ===== TOPIC TRACKING (SMS NOTIFICATIONS) =====
+async function trackTopic(event, articleId, title) {
+    if (event) event.stopPropagation();
+    
+    // Check if user is logged in
+    const userUid = localStorage.getItem('user_uid');
+    if (!userUid) {
+        alert("Please login via Mobile/OTP first to enable SMS tracking.");
+        return;
+    }
+
+    const btn = event.currentTarget;
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid white; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch('/api/track-topic', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                article_id: articleId,
+                user_id: userUid,
+                firebase_uid: userUid,
+                language: 'english'
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+            btn.style.background = '#10b981'; // Green
+            btn.innerHTML = '✓ Tracked';
+            alert("Topic Tracking Enabled! You'll receive SMS intel when related regional updates occur.");
+        } else {
+            throw new Error(data.message || "Tracking failed");
+        }
+    } catch (error) {
+        console.error("Tracking failed:", error);
+        if (btn) {
+            btn.style.background = '#ef4444'; // Red
+            btn.innerHTML = '! Error';
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.style.background = '';
+                btn.disabled = false;
+            }, 3000);
+        }
+    }
+}
+window.trackTopic = trackTopic;
+
+// ===== PROFILE & STREAK MANAGEMENT =====
+function toggleProfileDropdown() {
+    const menu = document.getElementById('profile-dropdown-menu');
+    if (menu) {
+        const isVisible = menu.style.display === 'block';
+        menu.style.display = isVisible ? 'none' : 'block';
+    }
+}
+window.toggleProfileDropdown = toggleProfileDropdown;
+
+// Close dropdown on outside click
+document.addEventListener('click', (e) => {
+    const container = document.querySelector('.header-profile-container');
+    const menu = document.getElementById('profile-dropdown-menu');
+    if (container && menu && !container.contains(e.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        alert("Image too large. Max 2MB allowed.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const user = firebase.auth().currentUser;
+    if (!user) {
+        alert("Please sign in to upload images.");
+        return;
+    }
+    formData.append('firebase_uid', user.uid);
+
+    try {
+        const response = await fetch('/api/user/upload_profile_image', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+        if (data.status === 'success') {
+            updateProfileUI(data.image_url);
+            alert("Profile image updated successfully!");
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        console.error("Upload failed:", error);
+        alert("Failed to upload image. Please try again.");
+    }
+}
+window.handleImageUpload = handleImageUpload;
+
+function updateProfileUI(imageUrl, displayName, email) {
+    const headerImg = document.getElementById('header-profile-img');
+    const dropdownImg = document.getElementById('dropdown-profile-img');
+    const headerInitial = document.getElementById('header-profile-initial');
+    const dropdownInitial = document.getElementById('dropdown-profile-initial');
+    const nameDisplay = document.getElementById('user-display-name');
+    const emailDisplay = document.getElementById('user-display-email');
+
+    if (imageUrl) {
+        if (headerImg) { headerImg.src = imageUrl; headerImg.style.display = 'block'; }
+        if (dropdownImg) { dropdownImg.src = imageUrl; dropdownImg.style.display = 'block'; }
+        if (headerInitial) headerInitial.style.display = 'none';
+        if (dropdownInitial) dropdownInitial.style.display = 'none';
+    } else if (displayName) {
+        const initial = displayName.charAt(0).toUpperCase();
+        if (headerInitial) { headerInitial.innerText = initial; headerInitial.style.display = 'flex'; }
+        if (dropdownInitial) { dropdownInitial.innerText = initial; dropdownInitial.style.display = 'flex'; }
+        if (headerImg) headerImg.style.display = 'none';
+        if (dropdownImg) dropdownImg.style.display = 'none';
+    }
+
+    if (displayName && nameDisplay) nameDisplay.innerText = displayName;
+    if (email && emailDisplay) emailDisplay.innerText = email;
+}
+
+// Sync Firebase Auth State with Profile UI
+firebase.auth().onAuthStateChanged((user) => {
+    if (user) {
+        updateProfileUI(user.photoURL, user.displayName, user.email);
+        localStorage.setItem('user_uid', user.uid);
+        // Fetch streak from backend
+        fetch(`/api/user/ping_streak`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ firebase_uid: user.uid })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const badge = document.getElementById('streak-count-display');
+                if (badge) badge.innerText = data.current_streak || 0;
+            }
+        }).catch(err => console.error("Streak sync error:", err));
+    }
+});
+
+function handleSignOut() {
+    firebase.auth().signOut().then(() => {
+        localStorage.removeItem('user_uid');
+        window.location.reload();
+    });
+}
+window.handleSignOut = handleSignOut;
+
+// ===== LANGUAGE SWITCHER HELPERS =====
+function toggleHeaderLangMenu() {
+    const switcher = document.getElementById('global-lang-switcher');
+    if (switcher) {
+        const menu = switcher.querySelector('.dropdown-menu');
+        if (menu) {
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+        }
+    }
+}
+window.toggleHeaderLangMenu = toggleHeaderLangMenu;
+
+function filterHeaderLanguages() {
+    const input = document.getElementById('header-lang-search');
+    const filter = input.value.toLowerCase();
+    const items = document.querySelectorAll('#header-lang-list .lang-item');
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        if (name.includes(filter)) {
+            item.style.display = 'flex';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+window.filterHeaderLanguages = filterHeaderLanguages;
+
+async function changeLang(lang) {
+    console.log("Changing language to:", lang);
+    const user = firebase.auth().currentUser;
+    if (user) {
+        try {
+            await fetch('/api/user/language', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ firebase_uid: user.uid, language: lang })
+            });
+        } catch (e) { console.error("Lang save failed:", e); }
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', lang);
+    window.location.href = url.toString();
+}
+window.changeLang = changeLang;
+
+// Close lang menu on outside click
+document.addEventListener('click', (e) => {
+    const switcher = document.getElementById('global-lang-switcher');
+    if (switcher && !switcher.contains(e.target)) {
+        const menu = switcher.querySelector('.dropdown-menu');
+        if (menu) menu.style.display = 'none';
+    }
+});
+
+// ===== CARD INTERACTION HELPERS =====
+function openChatFromCard(event, articleId) {
+    if (event) event.stopPropagation();
+    const chatBtn = document.getElementById('ai-chat-btn');
+    if (chatBtn) {
+        chatBtn.click();
+        window.currentChatContextId = articleId;
+        console.log("Chat opened with context:", articleId);
+    } else {
+        alert("AI Chat module loading...");
+    }
+}
+window.openChatFromCard = openChatFromCard;
+
+async function requestUpdate(event, id) {
+    if (event) event.stopPropagation();
+    const btn = event.currentTarget || event.target;
+    if (!btn) return;
+
+    const originalContent = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner" style="display:inline-block; width:12px; height:12px; border:2px solid white; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></span>';
+    btn.disabled = true;
+    
+    try {
+        const res = await fetch(`/api/articles/${id}/update`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            btn.style.background = '#10b981';
+            btn.innerHTML = '✓ Updated';
+            setTimeout(() => { window.location.reload(); }, 1500);
+        } else {
+            throw new Error(data.error || "Update failed");
+        }
+    } catch (err) {
+        console.error("Update request failed:", err);
+        btn.style.background = '#ef4444';
+        btn.innerHTML = 'Error';
+        setTimeout(() => { btn.innerHTML = originalContent; btn.disabled = false; btn.style.background = ''; }, 3000);
+    }
+}
+window.requestUpdate = requestUpdate;

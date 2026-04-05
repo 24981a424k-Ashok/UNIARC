@@ -14,7 +14,11 @@ class StudentClassifier:
         "Scholarships & Internships": ["scholarship", "internship", "fellowship", "stipend", "student grant", "student funding", "financial assistance for students", "startup grant", "startup funding", "training program", "summer internship"],
         "Career & Placement News": ["campus placement", "fresher hiring", "graduate recruitment", "university placement", "off-campus drive", "fresher vacancy", "job for students", "career fair", "recruitment drive", "employment news"],
         "Study Abroad Updates": ["student visa", "study abroad", "ielts", "toefl", "gre", "international student", "foreign university", "overseas education", "visa news", "emigration for study"],
-        "AI & Tech for Students": ["student hackathon", "coding competition", "aicte internship", "student bootcamp", "student certification", "campus ambassador", "hackathon", "robotics", "tech fest", "coding challenge"]
+        "AI & Tech for Students": ["student hackathon", "coding competition", "aicte internship", "student bootcamp", "student certification", "campus ambassador", "hackathon", "robotics", "tech fest", "coding challenge"],
+        "Education": ["education", "teaching", "schooling", "learning", "classroom", "teacher strike", "pedagogy", "literacy"],
+        "Campus Life": ["campus news", "university life", "student union", "college event", "hostel", "campus infrastructure", "student protest"],
+        "Admissions & Courses": ["admission open", "apply now", "enrollment", "course curriculum", "degree program", "admission-notice"],
+        "Academic Research": ["research paper", "journal", "phd thesis", "scientific discovery", "academic conference", "academic study"]
     }
 
     PROFILES = {

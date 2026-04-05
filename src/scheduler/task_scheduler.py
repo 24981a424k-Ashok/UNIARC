@@ -14,11 +14,13 @@ from src.analysis.llm_analyzer import LLMAnalyzer
 from src.digest.generator import DigestGenerator
 from src.database.models import SessionLocal, RawNews, VerifiedNews
 from src.delivery.notifications import NotificationManager
+from src.config.firebase_config import initialize_firebase
 
 from loguru import logger
 
 async def run_news_cycle():
     logger.info("Starting Daily News Cycle...")
+    initialize_firebase()
     db = SessionLocal()
     
     try:
@@ -158,7 +160,11 @@ async def run_news_cycle():
                 NotificationManager.send_daily_brief(db, digest["brief"])
             if "top_stories" in digest:
                 for story in digest["top_stories"][:2]:
-                    NotificationManager.notify_subscribers(db, story.get("category", "General"), story["title"], story["url"])
+                    NotificationManager.notify_subscribers(db, story.get("category", "General"), story["title"], story["url"], story.get("id"))
+            
+            # 6. Check Topic Tracking
+            logger.info("Step 6: Topic Tracking Notifications")
+            await check_topic_tracking(db)
 
     except Exception as e:
         logger.error(f"Error in news cycle: {e}", exc_info=True)
@@ -166,10 +172,62 @@ async def run_news_cycle():
         db.close()
         logger.info("News Cycle Completed.")
 
+async def check_topic_tracking(db: Session):
+    """Check for new articles matching tracked topics and notify users."""
+    try:
+        from src.database.models import TopicTracking, VerifiedNews, User, TrackNotification
+        from src.delivery.notifications import NotificationManager
+        from datetime import datetime, timedelta
+        
+        # Look for tracks created or updated recently
+        # In a real system, we'd track 'last_notified_at'
+        # For now, look for news from the last hour that matches active tracks
+        one_hour_ago = datetime.utcnow() - timedelta(hours=1)
+        new_articles = db.query(VerifiedNews).filter(VerifiedNews.created_at > one_hour_ago).all()
+        
+        if not new_articles:
+            return
+
+        tracks = db.query(TopicTracking).filter(TopicTracking.notify_sms == True).all()
+        
+        for track in tracks:
+            user = track.user
+            if not user or not user.phone:
+                continue
+            
+            for article in new_articles:
+                # Basic keyword matching
+                match = False
+                for kw in (track.topic_keywords or []):
+                    if kw.lower() in article.title.lower() or kw.lower() in (article.category or "").lower():
+                        match = True
+                        break
+                
+                if match:
+                    # CHECK FOR DUPLICATE
+                    already_notified = db.query(TrackNotification).filter(
+                        TrackNotification.user_id == user.id,
+                        TrackNotification.news_id == article.id
+                    ).first()
+                    
+                    if not already_notified:
+                        logger.info(f"Topic Match Found! Notifying {user.phone} for '{article.title}'")
+                        NotificationManager.send_sms(
+                            user.phone, 
+                            f"Tracked Intelligence: '{article.title}' matches your search. Read more: {article.url}"
+                        )
+                        # RECORD NOTIFICATION
+                        db.add(TrackNotification(user_id=user.id, news_id=article.id))
+                        db.commit()
+                    
+    except Exception as e:
+        logger.error(f"Error in topic tracking check: {e}")
+
 
 async def run_twitter_only_cycle():
     """Lightweight cycle just for Twitter and Dashboard updates."""
     logger.info("Starting Lightweight Twitter Cycle...")
+    initialize_firebase()
     db = SessionLocal()
     try:
         # 1. Collect Twitter

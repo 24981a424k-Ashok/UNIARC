@@ -71,9 +71,16 @@
         <div style="display:flex; gap:0.75rem; align-items:center;">
             <span style="font-size:0.8rem; color:var(--text-secondary);">AI Analysis • {{ story.time_ago or 'Just Now' }}</span>
             <div style="display:flex; gap:0.5rem;">
-                <button class="card-action-btn share-btn" onclick="shareArticle(event, '{{ story.id }}', '{{ story.title | urlencode }}')" title="Share Intelligence">
+                <button class="card-action-btn share-btn" onclick="shareArticle(event, '{{ story.id }}', '{{ story.title | urlencode }}', '{{ story.url }}')" title="Share Intelligence">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-12-4l4-4 4 4m-4-4v12" />
+                    </svg>
+                </button>
+                <button class="card-action-btn track-btn" onclick="trackTopic(event, '{{ story.id }}', '{{ story.title | urlencode }}')" title="Track Intelligence" style="background:rgba(251, 188, 4, 0.1); border-color:var(--accent-gold);">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="6" />
+                        <circle cx="12" cy="12" r="2" />
                     </svg>
                 </button>
                 <button class="card-action-btn update-btn" onclick="requestUpdate(event, '{{ story.id }}')" title="Force AI Update">

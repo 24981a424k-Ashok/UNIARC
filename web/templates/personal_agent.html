@@ -522,6 +522,12 @@
                                 <span>${getTimeAgo(article.published_at)}</span>
                             </div>
                             <div class="card-actions">
+                                <button class="action-btn share-btn" onclick="shareArticle(event, '${article.id}', '${encodeURIComponent(article.title)}', '${article.url}')" title="Share Intel">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-12-4l4-4 4 4m-4-4v12" /></svg>
+                                </button>
+                                <button class="action-btn track-btn" onclick="trackTopic(event, '${article.id}', '${encodeURIComponent(article.title)}')" title="Track Intel">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg>
+                                </button>
                                 <button class="action-btn chat-btn" data-id="${article.id}" data-title="${(article.title || '').replace(/'/g, '&#39;').replace(/"/g, '&quot;')}" onclick="handleMiniChat(this)" title="Chat with News">
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                                 </button>

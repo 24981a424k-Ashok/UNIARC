@@ -3,6 +3,7 @@ from firebase_admin import messaging
 from loguru import logger
 from sqlalchemy.orm import Session
 from src.database.models import User, Subscription
+from src.utils.twilio_helper import twilio_helper
 
 class NotificationManager:
     @staticmethod
@@ -10,6 +11,9 @@ class NotificationManager:
         """Send a multicast message to multiple device tokens."""
         if not tokens:
             return
+
+        from src.config.firebase_config import initialize_firebase
+        initialize_firebase()
 
         message = messaging.MulticastMessage(
             notification=messaging.Notification(
@@ -40,35 +44,55 @@ class NotificationManager:
 
     @staticmethod
     def send_sms(phone: str, body: str):
-        """Stub for sending SMS notifications."""
+        """Send SMS via Twilio helper."""
         if not phone: return
-        logger.info(f"[SMS STUB] Sending to {phone}: {body[:50]}...")
-        # Integration point for Twilio/SNS/etc.
+        return twilio_helper.send_sms(phone, body)
 
     @staticmethod
-    def notify_subscribers(db: Session, category: str, news_title: str, news_url: str):
-        """Find users subscribed to a category and notify them via all available channels."""
+    def notify_subscribers(db: Session, category: str, news_title: str, news_url: str, news_id: int):
+        """Find users subscribed to a category and notify them via all available channels. Ensures no duplicates."""
+        from src.database.models import TrackNotification, User, Subscription
+        
         subscribers = db.query(User).join(Subscription).filter(
             (Subscription.category == category) | (Subscription.category == "All")
         ).all()
 
-        push_tokens = [u.push_token for u in subscribers if u.push_token]
-        
-        # 1. FCM Push
-        if push_tokens:
-            NotificationManager.send_push_notification(
-                tokens=push_tokens,
-                title=f"New in {category}",
-                body=news_title,
-                data={"url": news_url}
-            )
-
-        # 2. Email & SMS
+        # Group tokens for batch push
+        valid_push_tokens = []
         for user in subscribers:
+            # CHECK HISTORY: Absolütely zero duplicates
+            already_notified = db.query(TrackNotification).filter(
+                TrackNotification.user_id == user.id,
+                TrackNotification.news_id == news_id
+            ).first()
+            
+            if already_notified:
+                logger.info(f"Skipping duplicate notification for User {user.id} - News {news_id}")
+                continue
+
+            # Add to history
+            db.add(TrackNotification(user_id=user.id, news_id=news_id))
+            
+            if user.push_token:
+                valid_push_tokens.append(user.push_token)
+            
+            # 2. Email & SMS
             if user.email:
                 NotificationManager.send_email(user.email, f"AI News: {category}", f"{news_title}\nRead more: {news_url}")
             if user.phone:
                 NotificationManager.send_sms(user.phone, f"AI News [{category}]: {news_title}. {news_url}")
+        
+        db.commit()
+
+        # 1. FCM Push (Batch)
+        if valid_push_tokens:
+            NotificationManager.send_push_notification(
+                tokens=valid_push_tokens,
+                title=f"New in {category}",
+                body=news_title,
+                data={"url": news_url, "news_id": str(news_id)}
+            )
+
     @staticmethod
     def send_daily_brief(db: Session, brief_list: List[dict]):
         """Send the 60-second brief to all users."""

@@ -13,51 +13,53 @@ GROQ_MODEL = "llama-3.3-70b-versatile"
 
 class NewsTranslator:
     def __init__(self):
-        # Support multiple Groq API keys for rotation to avoid rate limits
-        self.groq_keys = getattr(settings, 'GROQ_API_KEYS', [])
-        if not self.groq_keys:
-            # Fall back to single key
-            single = getattr(settings, 'GROQ_API_KEY', '')
-            if single:
-                self.groq_keys = [single]
+        # 1. Gather all OpenAI and Groq keys for rotation
+        self.openai_keys = [settings.OPENAI_API_KEY] + getattr(settings, 'TRANSLATION_KEYS', [])
+        self.openai_keys = [k for k in self.openai_keys if k]
         
-        if not self.groq_keys:
-            logger.warning("No GROQ API keys found. Translation will be skipped.")
+        self.groq_keys = [settings.GROQ_API_KEY] + getattr(settings, 'GROQ_API_KEYS', [])
+        self.groq_keys = [k for k in self.groq_keys if k]
+        
+        if not self.openai_keys and not self.groq_keys:
+            logger.warning("No API keys found for NewsTranslator. Translation will be skipped.")
         else:
-            logger.info(f"NewsTranslator initialized with {len(self.groq_keys)} Groq API key(s) for rotation.")
+            logger.info(f"NewsTranslator initialized with {len(self.openai_keys)} OpenAI and {len(self.groq_keys)} Groq keys.")
         
-        # Cache one client per key
         self._clients: Dict[str, AsyncOpenAI] = {}
 
     def _get_client(self, target_lang: str = None) -> tuple:
-        """Return (AsyncOpenAI client, key_info) using a specialized or randomly selected Groq key."""
-        # 1. Check for specialized keys first
+        """Return (AsyncOpenAI client, key_info) using rotation, prioritizing OpenAI for quality."""
+        # 1. Specialized Groq Keys first (Historical requirement)
         if target_lang:
             lang_key = None
             lang_name = target_lang.lower().strip()
-            if "telugu" in lang_name:
-                lang_key = getattr(settings, 'GROQ_KEY_TELUGU', None)
-            elif "hindi" in lang_name:
-                lang_key = getattr(settings, 'GROQ_KEY_HINDI', None)
-            elif "malayalam" in lang_name:
-                lang_key = getattr(settings, 'GROQ_KEY_MALAYALAM', None)
-            elif "tamil" in lang_name:
-                lang_key = getattr(settings, 'GROQ_KEY_TAMIL', None)
+            if "telugu" in lang_name: lang_key = getattr(settings, 'GROQ_KEY_TELUGU', None)
+            elif "hindi" in lang_name: lang_key = getattr(settings, 'GROQ_KEY_HINDI', None)
+            elif "malayalam" in lang_name: lang_key = getattr(settings, 'GROQ_KEY_MALAYALAM', None)
+            elif "tamil" in lang_name: lang_key = getattr(settings, 'GROQ_KEY_TAMIL', None)
 
             if lang_key:
                 if lang_key not in self._clients:
                     self._clients[lang_key] = AsyncOpenAI(api_key=lang_key, base_url=GROQ_BASE_URL)
-                return self._clients[lang_key], f"Specialized ({target_lang})"
+                return self._clients[lang_key], f"Groq Specialized ({target_lang})"
 
-        # 2. Fall back to rotation
-        if not self.groq_keys:
-            return None, "None"
-        
-        idx = random.randint(0, len(self.groq_keys) - 1)
-        key = self.groq_keys[idx]
-        if key not in self._clients:
-            self._clients[key] = AsyncOpenAI(api_key=key, base_url=GROQ_BASE_URL)
-        return self._clients[key], f"Key#{idx + 1}"
+        # 2. Try OpenAI Pool (Highest Quality)
+        if self.openai_keys:
+            idx = random.randint(0, len(self.openai_keys) - 1)
+            key = self.openai_keys[idx]
+            if key not in self._clients:
+                self._clients[key] = AsyncOpenAI(api_key=key)
+            return self._clients[key], f"OpenAI Pool#{idx + 1}"
+
+        # 3. Fallback to Groq Pool
+        if self.groq_keys:
+            idx = random.randint(0, len(self.groq_keys) - 1)
+            key = self.groq_keys[idx]
+            if key not in self._clients:
+                self._clients[key] = AsyncOpenAI(api_key=key, base_url=GROQ_BASE_URL)
+            return self._clients[key], f"Groq Pool#{idx + 1}"
+            
+        return None, "None"
 
     async def translate_text(self, text: str, target_lang: str) -> str:
         """Translate a single piece of text to target_lang using Groq (Async)."""
