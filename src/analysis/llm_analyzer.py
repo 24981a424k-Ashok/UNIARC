@@ -22,11 +22,13 @@ class LLMAnalyzer:
         if not self.openai_keys and not self.groq_keys:
             logger.warning("All LLM API Keys missing! LLM analysis will be skipped/mocked.")
             self.client = None
+            self.api_key = None
         else:
+            self.api_key = self.openai_keys[0] if self.openai_keys else self.groq_keys[0]
             logger.info(f"LLMAnalyzer initialized with {len(self.openai_keys)} OpenAI keys and {len(self.groq_keys)} Groq keys for rotation.")
         
         # Hugging Face Security fix: Limit concurrency to 5 and add jitter
-        self.semaphore = asyncio.Semaphore(5)
+        self.semaphore = asyncio.Semaphore(10)
 
     def _get_openai_client(self, index=0):
         """Get an OpenAI client for a specific key in the pool."""
@@ -53,12 +55,23 @@ class LLMAnalyzer:
         for i in range(len(self.openai_keys)):
             client = await self._get_async_client("openai", i)
             try:
-                # Wrap tasks in semaphore and jitter for HF security compliance
+                # Wrap tasks in semaphore, jitter, and strict 45s timeout for stability
                 async def sem_task(article):
                     async with self.semaphore:
                          import random
-                         await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
-                         return await self._analyze_single_with_fallback(article, client, is_sports)
+                         await asyncio.sleep(random.uniform(0.05, 0.15)) # Add jitter
+                         try:
+                             # 45s timeout per article ensures one slow request doesn't hang the entire cycle
+                             return await asyncio.wait_for(
+                                 self._analyze_single_with_fallback(article, client, is_sports),
+                                 timeout=45.0
+                             )
+                         except asyncio.TimeoutError:
+                             logger.error(f"Analysis TIMEOUT (45s) for '{article.get('title', 'Unknown')}'. Using fallback.")
+                             return self._mock_analysis(article.get("title", "Unknown"))
+                         except Exception as e:
+                             logger.error(f"Analysis error for '{article.get('title', 'Unknown')}': {e}")
+                             return self._mock_analysis(article.get("title", "Unknown"))
 
                 tasks = [sem_task(a) for a in articles]
                 results = await asyncio.gather(*tasks)
@@ -76,13 +89,24 @@ class LLMAnalyzer:
             logger.info(f"Using Groq Key #{j+1} fallback for batch analysis.")
             client = await self._get_async_client("groq", j)
             try:
-                # Wrap tasks in semaphore and jitter for HF security compliance
+                # Wrap tasks in semaphore, jitter, and strict 45s timeout for stability
                 async def sem_task_groq(article):
                     async with self.semaphore:
                          import random
-                         await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
-                         model = "llama-3.3-70b-versatile"
-                         return await self._analyze_single_with_fallback(article, client, is_sports, model=model)
+                         await asyncio.sleep(random.uniform(0.05, 0.15)) # Add jitter
+                         try:
+                             # 45s timeout per article ensures one slow request doesn't hang the entire cycle
+                             model = "llama-3.3-70b-versatile"
+                             return await asyncio.wait_for(
+                                 self._analyze_single_with_fallback(article, client, is_sports, model=model),
+                                 timeout=45.0
+                             )
+                         except asyncio.TimeoutError:
+                             logger.error(f"Groq Analysis TIMEOUT (45s) for '{article.get('title', 'Unknown')}'. Using fallback.")
+                             return self._mock_analysis(article.get("title", "Unknown"))
+                         except Exception as e:
+                             logger.error(f"Groq Analysis error for '{article.get('title', 'Unknown')}': {e}")
+                             return self._mock_analysis(article.get("title", "Unknown"))
 
                 tasks = [sem_task_groq(a) for a in articles]
                 results = await asyncio.gather(*tasks)
@@ -296,18 +320,17 @@ IMPORTANT: Output ONLY valid JSON.
         Specialized High-Impact Business Intelligence Report.
         Persona: Senior Business Intelligence Analyst
         """
-        if not self.api_key:
+        if not self.openai_keys:
             return [self._mock_premium_business(a["title"]) for a in articles]
 
-        from openai import AsyncOpenAI
-        client = AsyncOpenAI(api_key=self.api_key)
+        client = await self._get_async_client("openai", 0)
         
         try:
             # Wrap tasks in semaphore and jitter for HF security compliance
             async def sem_task_premium(article):
                 async with self.semaphore:
                     import random
-                    await asyncio.sleep(random.uniform(0.1, 0.4)) # Add jitter
+                    await asyncio.sleep(random.uniform(0.05, 0.15)) # Add jitter
                     return await self._analyze_premium_single(article, client)
 
             tasks = [sem_task_premium(a) for a in articles]
@@ -563,16 +586,22 @@ IMPORTANT: Output ONLY valid JSON.
         """
         try:
             from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=self.api_key)
+            
             async with self.semaphore:
                 import random
-                await asyncio.sleep(random.uniform(0.1, 0.4))
-                client = AsyncOpenAI(api_key=self.api_key)
+                await asyncio.sleep(random.uniform(0.05, 0.15))
+                
                 response = await client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[{"role": "system", "content": "You are a professional fact-checker."}, {"role": "user", "content": prompt}],
                     temperature=0.1
                 )
-                data = json.loads(response.choices[0].message.content)
+                raw_content = response.choices[0].message.content
+                if "```json" in raw_content:
+                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                
+                data = json.loads(raw_content)
                 await client.close()
                 return data
         except Exception as e:
@@ -612,7 +641,7 @@ IMPORTANT: Output ONLY valid JSON.
 
             async with self.semaphore:
                 import random
-                await asyncio.sleep(random.uniform(0.1, 0.4))
+                await asyncio.sleep(random.uniform(0.05, 0.15))
                 
                 crystal_key = getattr(settings, 'GROQ_KEY_CRYSTAL_BALL', None)
                 
@@ -629,7 +658,11 @@ IMPORTANT: Output ONLY valid JSON.
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.7
                 )
-                data = json.loads(response.choices[0].message.content)
+                raw_content = response.choices[0].message.content
+                if "```json" in raw_content:
+                    raw_content = raw_content.split("```json")[1].split("```")[0].strip()
+                
+                data = json.loads(raw_content)
                 await client.close()
                 return data
         except Exception as e:

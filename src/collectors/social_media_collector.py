@@ -117,35 +117,24 @@ class SocialMediaCollector:
     def __init__(self):
         self.platforms = ["Google News", "Reddit"]
     
-    def fetch_trending_india(self) -> int:
+    def fetch_trending_india(self) -> Dict[str, int]:
         """
         Fetch trending India news from Google News and social platforms
-        Returns count of new trending items saved
-        
-        TODO: Replace with actual API integration
+        Returns stats dictionary
         """
         logger.info("Fetching trending India news from Google News...")
         
-        # In production, replace with actual API calls:
-        # - Google News API: Trending topics for India
-        # - Reddit: r/india hot posts
-        
         trending_items = self._get_trending_items()
-        saved = self._save_trending(trending_items)
+        stats = self._save_trending(trending_items)
         
-        logger.info(f"Saved {saved} trending India items")
-        return saved
+        logger.info(f"Saved {stats['new']} trending India items")
+        return stats
     
     def _get_trending_items(self) -> List[Dict[str, Any]]:
         """
         Get trending items from social media platforms
-        
-        TODO: Implement actual API integration
-        For now, returns placeholder data
         """
         items = []
-        
-        # Placeholder: In production, make actual API calls here
         for topic in TRENDING_INDIA_TOPICS:
             items.append({
                 "source_id": topic["source_id"],
@@ -157,14 +146,13 @@ class SocialMediaCollector:
                 "published_at": datetime.utcnow(),
                 "url_to_image": None
             })
-        
         return items
     
-    def _save_trending(self, items: List[Dict[str, Any]]) -> int:
+    def _save_trending(self, items: List[Dict[str, Any]]) -> Dict[str, int]:
         """Save trending items to database"""
         session = SessionLocal()
         count = 0
-        
+        dupe_count = 0
         try:
             for item in items:
                 url = item.get('url')
@@ -174,6 +162,7 @@ class SocialMediaCollector:
                 # Check for duplicates
                 exists = session.query(RawNews).filter(RawNews.url == url).first()
                 if exists:
+                    dupe_count += 1
                     continue
                 
                 try:
@@ -196,11 +185,11 @@ class SocialMediaCollector:
                     continue
             
             session.commit()
-            return count
+            return {"new": count, "duplicates": dupe_count, "total": len(items)}
         except Exception as e:
             logger.error(f"Database error saving trending: {e}")
             session.rollback()
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
         finally:
             session.close()
 

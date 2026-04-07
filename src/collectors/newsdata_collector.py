@@ -21,12 +21,12 @@ class NewsDataCollector:
         if not self.api_key:
             logger.warning("NewsData.io API Key is missing!")
 
-    def fetch_student_focus_news(self, limit: int = 50) -> int:
+    def fetch_student_focus_news(self, limit: int = 50) -> Dict[str, int]:
         """
         Fetch news specifically for students (Education, Career, Exams in India).
         """
         if not self.api_key:
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
 
         # Categories: education, science, technology
         # Keywords: exams, results, admission, scholarship, career, vacancy

@@ -35,16 +35,18 @@ class TwitterCollector:
                     consumer_secret=self.consumer_secret,
                     access_token=self.access_token,
                     access_token_secret=self.access_token_secret,
-                    wait_on_rate_limit=True
+                    wait_on_rate_limit=True,
+                    # Added explicit 30s timeout to prevent news cycle hangs
+                    request_timeout=30.0
                 )
             else:
                 self.client = None
-                logger.warning("Twitter Bearer Token missing. Falling back) to mock data.")
+                logger.warning("Twitter Bearer Token missing. Falling back to mock data.")
         except Exception as e:
             logger.error(f"Failed to initialize Twitter client: {e}")
             self.client = None
 
-    def fetch_top_updates(self, limit: int = 25) -> int:
+    def fetch_top_updates(self, limit: int = 25) -> Dict[str, int]:
         """Fetch news from X and save to database."""
         if not self.client:
             return self._use_mock_data()
@@ -99,15 +101,18 @@ class TwitterCollector:
             logger.error(f"Error fetching from Twitter API: {e}")
             return self._use_mock_data()
 
-    def _save_tweets(self, items: List[Dict[str, Any]]) -> int:
+    def _save_tweets(self, items: List[Dict[str, Any]]) -> Dict[str, int]:
         session = SessionLocal()
         count = 0
+        dupe_count = 0
         try:
             seen_urls = set()
             for item in items:
                 if item['url'] in seen_urls: continue
                 exists = session.query(RawNews).filter(RawNews.url == item['url']).first()
-                if exists: continue
+                if exists:
+                    dupe_count += 1
+                    continue
                 
                 seen_urls.add(item['url'])
                 
@@ -125,22 +130,20 @@ class TwitterCollector:
                 session.add(raw_news)
                 count += 1
             session.commit()
-            session.commit()
-            return count
+            return {"new": count, "duplicates": dupe_count, "total": len(items)}
         except Exception as e:
-            # Handle unique constraint explicitly to avoid noise
             if "UNIQUE constraint failed" in str(e) or "IntegrityError" in str(e):
                 logger.info("Duplicate tweets skipped during save.")
                 session.rollback()
-                return count
+                return {"new": count, "duplicates": dupe_count, "total": len(items)}
             
             logger.error(f"Error saving tweets: {e}")
             session.rollback()
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
         finally:
             session.close()
 
-    def _use_mock_data(self) -> int:
+    def _use_mock_data(self) -> Dict[str, int]:
         """High-quality fallback for Twitter news."""
         base_time = datetime.now(timezone.utc)
         

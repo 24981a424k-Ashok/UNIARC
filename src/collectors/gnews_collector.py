@@ -33,11 +33,10 @@ class GNewsCollector:
         """
         Fetch specialized intelligence and top headlines for specific countries.
         """
-        if not self.api_keys:
-            return {"new": 0, "duplicates": 0, "total": 0}
-
         total_stats = {"new": 0, "duplicates": 0, "total": 0}
-        
+        if not self.api_keys:
+            return total_stats
+
         # Specialized Country Features Mapping
         specialized_features = {
             'us': '("Stock Market" OR "Fed News" OR "Corporate News" OR "AI" OR "Tech" OR "Startup")',
@@ -48,18 +47,26 @@ class GNewsCollector:
             'in': '("Policy" OR "Market" OR "Economy" OR "Tech" OR "Startup" OR "Infrastructure")'
         }
 
-        # OPTIMIZATION: Rotate countries to avoid Rate Limits
+        # OPTIMIZATION: Rotate countries to avoid Rate Limits (now 200 req/day with 2 keys)
+        # 15 min cycle = 96 runs/day. 
+        # With 2 keys, we can afford ~2 req/run * 2 keys = 4 requests per run?
+        # Let's increase target countries to 3 to be safe and cover more ground.
         target_countries = []
         priority_countries = ['in', 'us']
         
+        # 1. Add priority countries first
         for pc in priority_countries:
             if pc in countries:
                 target_countries.append(pc)
         
+        # 2. Fill remaining slots with random countries
         remaining = [c for c in countries if c not in target_countries]
         import random
         random.shuffle(remaining)
         
+        # Max 4 countries per run (assuming 2 keys * 100 req/day / 96 runs = ~2 req/run. 
+        # But we rotate keys, so effectively we can do a bit more if we have multiple keys)
+        # If we have 2 keys, we can handle ~4 requests per 15 min cycle safely.
         slots_left = 4 - len(target_countries)
         if slots_left > 0:
             target_countries.extend(remaining[:slots_left])
@@ -86,12 +93,13 @@ class GNewsCollector:
                     
                     if query: params["q"] = query
                     
-                    if not query:
+                    # For non-English countries, GNews often works better with localized lang or no lang constraint
+                    if not query: # Only override lang for general top-headlines
                         if country == 'jp': params['lang'] = 'ja'
                         if country == 'ru': params['lang'] = 'ru'
                         if country == 'de': params['lang'] = 'de'
                         if country == 'fr': params['lang'] = 'fr'
-                        if country == 'in': params['lang'] = 'en'
+                        if country == 'in': params['lang'] = 'en' # India often wants English, but can support 'hi' if requested
                     
                     response = requests.get(f"{self.base_url}/{endpoint}", params=params)
                     if response.status_code == 200:
@@ -117,11 +125,13 @@ class GNewsCollector:
                 if not url:
                     continue
                 
+                # Check for duplicates
                 exists = session.query(RawNews).filter(RawNews.url == url).first()
                 if exists:
                     dupe_count += 1
                     continue
                 
+                # GNews date format: 2024-02-13T12:00:00Z
                 pub_date = article.get('publishedAt')
                 try:
                     pub_dt = datetime.strptime(pub_date, "%Y-%m-%dT%H:%M:%SZ")

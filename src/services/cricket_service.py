@@ -43,14 +43,16 @@ class CricketService:
                     response.raise_for_status()
                     data = response.json()
                     break # Success
-                except (requests.exceptions.RequestException, ConnectionResetError) as e:
+                except (requests.exceptions.RequestException, ConnectionError, ConnectionResetError) as e:
                     if attempt == max_retries - 1:
-                        logger.error(f"Cricket API Error after retries: {e}")
+                        logger.warning(f"Cricket API Connection Issue (Waiting 60s): {e}")
+                        self._last_fetch = time.time() - (self._cache_expiry - 60) # Only lockout for 60s
                         return self._cache
                     time.sleep(1) # Wait 1s before retry
             
             if data.get("status") != "success":
-                logger.error(f"Cricket API Error: {data.get('reason', 'Unknown error')}")
+                logger.warning(f"Cricket API Status Alert: {data.get('reason', 'Unknown error')}")
+                self._last_fetch = time.time() # Negative caching
                 return self._cache # Fallback to stale cache
 
             matches = data.get("data", [])
@@ -83,7 +85,8 @@ class CricketService:
             return None
             
         except Exception as e:
-            logger.error(f"Error in Cricket Service: {e}")
+            logger.warning(f"Cricket Service Temporary Failure: {e}")
+            self._last_fetch = time.time() # Negative caching
             return self._cache
 
     def _get_short_score(self, match: Dict[str, Any]) -> str:

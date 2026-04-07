@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:7860" # Based on main.py port
+BASE_URL = "http://localhost:8000" # Based on main.py port
 UID = "9CMrdFKvAMRdeEEN0atMmSlC10s1"
 
 def test_status():

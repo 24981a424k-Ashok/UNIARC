@@ -108,33 +108,26 @@ class RSSCollector:
     def __init__(self):
         self.feeds = RSS_FEEDS
 
-    def fetch_recent_news(self) -> int:
+    def fetch_recent_news(self) -> Dict[str, int]:
         """
         Fetch news from all configured RSS feeds from the last 24 hours.
-        Returns count of new articles saved.
+        Returns stats dictionary.
         """
-        total_saved = 0
+        stats = {"new": 0, "duplicates": 0, "total": 0}
         
         for source_name, feed_url in self.feeds.items():
             try:
                 # Parse the feed
                 feed = feedparser.parse(feed_url)
                 
-                # Check for parsing errors
                 if feed.bozo:
                     logger.warning(f"Potential issue parsing feed {source_name}: {feed.bozo_exception}")
 
-                # Process entries
                 articles = []
                 for entry in feed.entries:
-                    # Extract published date
                     published_at = self._parse_date(entry)
-                    
-                    # Filter by last 24h
                     if self._is_recent(published_at):
-                        # Extract Image
                         image_url = self._extract_image(entry)
-                        
                         articles.append({
                             "source_id": source_name,
                             "source_name": feed.feed.get("title", source_name),
@@ -144,19 +137,21 @@ class RSSCollector:
                             "author": entry.get("author", "Unknown"),
                             "published_at": published_at,
                             "url_to_image": image_url,
-                            "country_code": self._detect_country(source_name) # Auto-tag country
+                            "country_code": self._detect_country(source_name)
                         })
                 
                 if articles:
-                   saved = self._save_articles(articles)
-                   total_saved += saved
-                   logger.info(f"Fetched {len(articles)} recent items from {source_name}, saved {saved} new.")
+                   res = self._save_articles(articles)
+                   stats["new"] += res["new"]
+                   stats["duplicates"] += res["duplicates"]
+                   stats["total"] += len(articles)
+                   logger.info(f"Fetched {len(articles)} recent items from {source_name}, saved {res['new']} new.")
                 
             except Exception as e:
                 logger.error(f"Error fetching RSS feed {source_name}: {e}")
                 continue
                 
-        return total_saved
+        return stats
 
     def _extract_image(self, entry) -> str:
         """Try to find an image URL in common RSS fields"""
@@ -240,29 +235,28 @@ class RSSCollector:
         }
         return mapping.get(source_id)
 
-    def _save_articles(self, articles: List[Dict[str, Any]]) -> int:
+    def _save_articles(self, articles: List[Dict[str, Any]]) -> Dict[str, int]:
         session = SessionLocal()
         count = 0
+        dupe_count = 0
         try:
             seen_urls = set()
             for article in articles:
                 url = article.get('url')
-                if not url:
+                if not url or url in seen_urls:
                     continue
                 
-                # Check for duplicates (DB + Current Batch)
                 if url in seen_urls:
                     continue
                 
                 exists = session.query(RawNews).filter(RawNews.url == url).first()
                 if exists:
+                    dupe_count += 1
                     continue
                 
                 seen_urls.add(url)
                 
                 try:
-                    # Double check existence within a sub-transaction if possible, 
-                    # but simple try/except is most robust for SQLite concurrency
                     raw_news = RawNews(
                         source_id=article['source_id'],
                         source_name=article['source_name'],
@@ -273,22 +267,20 @@ class RSSCollector:
                         url_to_image=article.get('url_to_image'),
                         published_at=article['published_at'],
                         content=article['content'],
-                        country=article.get('country_code') # Explicitly save detected country
+                        country=article.get('country_code')
                     )
                     session.add(raw_news)
-                    session.flush() # Flush to catch integrity errors early
                     count += 1
                 except Exception as e:
-                    session.rollback() # Rollback the failed insertion
-                    # logger.debug(f"Skipping duplicate or invalid article: {url}")
+                    session.rollback()
                     continue
             
             session.commit()
-            return count
+            return {"new": count, "duplicates": dupe_count, "total": len(articles)}
         except Exception as e:
             logger.error(f"Database error saving RSS: {e}")
             session.rollback()
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
         finally:
             session.close()
 

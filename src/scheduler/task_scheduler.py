@@ -27,35 +27,58 @@ async def run_news_cycle():
         # 1. Collect
         logger.info("Step 1: Collection")
         
-        # 1. Individual Collector Stats
+        # 1. Individual Collector Stats (Pre-initialized for Zero Error)
+        api_res = {"new": 0, "duplicates": 0, "total": 0}
+        rss_res = {"new": 0, "duplicates": 0, "total": 0}
+        twitter_res = {"new": 0, "duplicates": 0, "total": 0}
+        trending_res = {"new": 0, "duplicates": 0, "total": 0}
+        gnews_res = {"new": 0, "duplicates": 0, "total": 0}
+        newsdata_res = {"new": 0, "duplicates": 0, "total": 0}
+
         api_collector = NewsCollector()
-        api_res = api_collector.fetch_recent_news() # {new: X, duplicates: Y, total: Z}
+        api_res = api_collector.fetch_recent_news() 
         
         from src.collectors.rss_collector import RSSCollector
         rss_collector = RSSCollector()
-        rss_count = rss_collector.fetch_recent_news() # Still returns int for now, but we'll convert
+        rss_res = rss_collector.fetch_recent_news() 
         
         twitter_collector = TwitterCollector()
-        twitter_count = twitter_collector.fetch_top_updates()
+        twitter_res = twitter_collector.fetch_top_updates()
         
         social_collector = SocialMediaCollector()
-        trending_count = social_collector.fetch_trending_india()
+        trending_res = social_collector.fetch_trending_india()
 
         from src.collectors.gnews_collector import GNewsCollector
         gnews_collector = GNewsCollector()
-        gnews_res = gnews_collector.fetch_country_news() # {new: X, duplicates: Y, total: Z}
+        gnews_res = gnews_collector.fetch_country_news() 
 
         from src.collectors.newsdata_collector import NewsDataCollector
         newsdata_collector = NewsDataCollector()
-        newsdata_res = newsdata_collector.fetch_student_focus_news() # {new: X, duplicates: Y, total: Z}
+        newsdata_res = newsdata_collector.fetch_student_focus_news() 
         
-        # 2. Aggregation Logic
-        new_count = api_res["new"] + rss_count + twitter_count + trending_count + gnews_res["new"] + newsdata_res["new"]
-        dupe_count = api_res["duplicates"] + gnews_res["duplicates"] + newsdata_res["duplicates"]
-        total_api_checked = api_res["total"] + gnews_res["total"] + newsdata_res["total"]
+        # 2. Aggregation Logic with Type Safety
+        def get_stat(res, key):
+            if isinstance(res, dict): return res.get(key, 0)
+            return res if key == "new" else 0
+
+        new_count = (
+            get_stat(api_res, "new") + get_stat(rss_res, "new") + 
+            get_stat(twitter_res, "new") + get_stat(trending_res, "new") + 
+            get_stat(gnews_res, "new") + get_stat(newsdata_res, "new")
+        )
+        dupe_count = (
+            get_stat(api_res, "duplicates") + get_stat(rss_res, "duplicates") + 
+            get_stat(twitter_res, "duplicates") + get_stat(trending_res, "duplicates") + 
+            get_stat(gnews_res, "duplicates") + get_stat(newsdata_res, "duplicates")
+        )
+        total_api_checked = (
+            get_stat(api_res, "total") + get_stat(rss_res, "total") + 
+            get_stat(twitter_res, "total") + get_stat(trending_res, "total") + 
+            get_stat(gnews_res, "total") + get_stat(newsdata_res, "total")
+        )
 
         logger.info(f"News Cycle: Checked {total_api_checked} sources, found {dupe_count} duplicates.")
-        logger.info(f"Intelligence Update: Saved {new_count} new articles (NewsData: {newsdata_res['new']}, GNews: {gnews_res['new']}, NewsAPI: {api_res['new']}).")
+        logger.info(f"Intelligence Update: Saved {new_count} new articles.")
         
         if new_count == 0 and db.query(RawNews).count() == 0:
             logger.warning("No news collected and DB is empty. Aborting cycle.")
@@ -137,23 +160,32 @@ async def run_news_cycle():
                                 break
                 news.category = cat
 
-            # Run specialized Sports analysis
+            # Run specialized Sports analysis (Incremental Wave Pattern)
             if sports_articles:
-                logger.info(f"Analyzing {len(sports_articles)} articles with Sports AI Editor...")
-                sports_results = await analyzer.analyze_batch([a[1] for a in sports_articles], is_sports=True)
-                for (news, _), result in zip(sports_articles, sports_results):
-                    apply_analysis_to_news(news, result)
-                    news.category = "Sports" # Force Sports
+                logger.info(f"Analyzing {len(sports_articles)} articles with Sports AI (Incremental Waves)...")
+                wave_size = 5
+                for i in range(0, len(sports_articles), wave_size):
+                    wave = sports_articles[i:i + wave_size]
+                    sports_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=True)
+                    for (news, _), result in zip(wave, sports_results):
+                        apply_analysis_to_news(news, result)
+                        news.category = "Sports"
+                    db.commit() # Save this wave immediately!
+                    logger.info(f"Progress: Processed {min(i + wave_size, len(sports_articles))}/{len(sports_articles)} sports articles.")
             
-            # Run standard analysis for others
+            # Run standard analysis (Incremental Wave Pattern)
             if other_articles:
-                logger.info(f"Analyzing {len(other_articles)} articles with Standard AI...")
-                other_results = await analyzer.analyze_batch([a[1] for a in other_articles], is_sports=False)
-                for (news, _), result in zip(other_articles, other_results):
-                    apply_analysis_to_news(news, result)
-            
-            db.commit()
-            logger.info(f"Analyzed {len(unanalyzed)} articles in parallel (incl. {len(sports_articles)} sports).")
+                logger.info(f"Analyzing {len(other_articles)} articles with Standard AI (Incremental Waves)...")
+                wave_size = 10 # Standard analysis can handle larger waves
+                for i in range(0, len(other_articles), wave_size):
+                    wave = other_articles[i:i + wave_size]
+                    other_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=False)
+                    for (news, _), result in zip(wave, other_results):
+                        apply_analysis_to_news(news, result)
+                    db.commit() # Save this wave immediately!
+                    logger.info(f"Progress: Processed {min(i + wave_size, len(other_articles))}/{len(other_articles)} standard articles.")
+
+            logger.info(f"Analyzed {len(unanalyzed)} articles incrementally (incl. {len(sports_articles)} sports).")
 
         # 4. Generate Digest
         logger.info("Step 4: Digest Generation")
@@ -180,6 +212,9 @@ async def run_news_cycle():
             await asyncio.sleep(2)
     finally:
         db.close()
+        logger.info("--------------------------------------------------")
+        logger.info("✅ NEWS CYCLE: EXECUTION COMPLETED SUCCESSFULLY ✅")
+        logger.info("--------------------------------------------------")
         logger.info("News Cycle Completed.")
 
 async def check_topic_tracking(db: Session):
@@ -242,8 +277,8 @@ async def run_twitter_only_cycle():
     try:
         # 1. Collect Twitter
         twitter_collector = TwitterCollector()
-        twitter_count = twitter_collector.fetch_top_updates()
-        logger.info(f"Collected {twitter_count} tweets.")
+        twitter_res = twitter_collector.fetch_top_updates()
+        logger.info(f"Collected {twitter_res.get('new', 0)} tweets.")
 
         # 2. Force Digest Generation (This also promotes raw tweets to verified in our patched generator)
         generator = DigestGenerator()
@@ -257,7 +292,13 @@ async def run_twitter_only_cycle():
         logger.info("Twitter Cycle Completed.")
 
 def start_scheduler():
-    scheduler = BackgroundScheduler()
+    # Configure scheduler with higher concurrency to prevent "skipped" cycles
+    job_defaults = {
+        'coalesce': False,
+        'max_instances': 3,
+        'misfire_grace_time': 3600
+    }
+    scheduler = BackgroundScheduler(job_defaults=job_defaults)
     
     # Run every 15 minutes (Balanced Update Cycle)
     from datetime import datetime, timedelta
@@ -279,8 +320,11 @@ def start_scheduler():
         loop.run_until_complete(run_twitter_only_cycle())
         loop.close()
 
-    # Full News Cycle (Run immediately on boot + every 15 minutes)
-    scheduler.add_job(_run_async_cycle, 'interval', minutes=15, next_run_time=run_date, id='full_news_cycle')
+    # 4. Immediate Startup Trigger (Safety First)
+    # Check if we have fresh news. If not, trigger a cycle 5s after boot.
+    run_date = datetime.now() + timedelta(seconds=5)
+    scheduler.add_job(_run_async_cycle, 'interval', minutes=15, next_run_time=run_date, id='full_news_cycle', replace_existing=True)
+    logger.info("News Cycle Scheduled: Every 15m. Startup trigger in 5s.")
     
     # Daily Newspaper Update
     scheduler.add_job(

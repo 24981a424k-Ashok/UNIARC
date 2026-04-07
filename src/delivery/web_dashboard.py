@@ -646,6 +646,13 @@ async def dashboard(request: Request, uid: str = None, category: str = None, cou
                             seed = f"{item.get('title', '')}{item.get('id', '')}"
                             item["image_url"] = get_fallback_image(seed)
 
+        # 9.C Live Cricket Score Fetching (Draggable floating widget)
+        try:
+            cricket_score = cricket_service.get_live_scores()
+        except Exception as ce:
+            logger.error(f"Failed to fetch cricket scores for dashboard: {ce}")
+            cricket_score = None
+
         firebase_config = {
             "apiKey": settings.FIREBASE_API_KEY,
             "authDomain": settings.FIREBASE_AUTH_DOMAIN,
@@ -744,6 +751,7 @@ async def dashboard(request: Request, uid: str = None, category: str = None, cou
             "admin_api_url": os.getenv("ADMIN_API_URL", "http://localhost:5000"),
             "selected_lang": lang,
             "ui": get_ui_translations(lang),
+            "cricket_score": cricket_score,
         }
 
         return templates.TemplateResponse(request=request, name="dashboard.html", context=context)
@@ -1048,18 +1056,8 @@ async def get_more_stories(category: str, offset: int, country: str = None, lang
                     self.db_data = data
             
             proxies = [StoryProxy(s) for s in subset]
-            translated_proxies = await translator._do_translate(proxies, lang)
-            
-            for i, p in enumerate(translated_proxies):
-                t_data = dict(subset[i])
-                t_data["title"] = p.title
-                t_data["summary"] = p.summary
-                t_data["why"] = p.why_it_matters
-                t_data["affected"] = p.who_is_affected
-                t_data["bullets"] = p.summary_bullets
-                translated_subset.append(t_data)
-                
-            subset = translated_subset
+            translated_proxies = await _do_translate(subset, lang, "")
+            subset = translated_proxies.get("translated_stories", subset)
         except Exception as e:
             print(f"Error translating more-stories: {str(e)}")
     
@@ -1126,39 +1124,6 @@ async def login(payload: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Access Denied: Invalid Credentials")
 
     raise HTTPException(status_code=422, detail="Missing Authentication Parameters")
-    # Upsert User
-    user = db.query(User).filter(User.firebase_uid == uid).first()
-    needs_language = False
-    
-    if not user:
-        user = User(firebase_uid=uid, email=email, phone=phone, preferred_language="english")
-        db.add(user)
-        needs_language = True
-    else:
-        # Update email/phone if they changed/populated
-        if email: user.email = email
-        if phone: user.phone = phone
-        
-        # Check if user has preferred_language, handle safely for old records
-        try:
-            if not user.preferred_language:
-                needs_language = True
-        except AttributeError:
-            # Fallback if DB column is missing or not yet reflective
-            needs_language = True
-            
-    db.commit()
-    db.refresh(user)
-    
-    # Safe access to preferred_language
-    pref_lang = "english"
-    try:
-        if user.preferred_language:
-            pref_lang = user.preferred_language
-    except AttributeError:
-        pass
-        
-    return {"status": "success", "uid": uid, "needs_language": needs_language, "preferred_language": pref_lang}
 
 class LanguageRequest(BaseModel):
     firebase_uid: str
@@ -2681,132 +2646,6 @@ async def track_topic(data: dict, db: Session = Depends(get_db)):
 
     return {"status": "success", "message": "Topic tracking enabled"}
 
-# ====================== ADMIN API ROUTES ======================
-
-@router.get("/api/articles")
-async def get_admin_articles(category: str = None, db: Session = Depends(get_db)):
-    query = db.query(VerifiedNews)
-    if category:
-        query = query.filter(VerifiedNews.category == category)
-    articles = query.order_by(VerifiedNews.published_at.desc()).limit(100).all()
-    return [a.to_dict() for a in articles]
-
-@router.put("/api/articles/{id}")
-async def update_article(id: int, data: dict, db: Session = Depends(get_db)):
-    article = db.query(VerifiedNews).filter(VerifiedNews.id == id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    
-    for key, value in data.items():
-        if hasattr(article, key):
-            setattr(article, key, value)
-    db.commit()
-    from src.database.models import ProtocolHistory
-    # Add a custom helper if needed or just inline it
-    new_log = ProtocolHistory(
-        action="update",
-        target_type="article",
-        target_id=str(id),
-        admin_user="system_admin",
-        details=f"Updated article: {article.title}"
-    )
-    db.add(new_log)
-    db.commit()
-    return {"status": "success"}
-
-@router.get("/api/get-prediction")
-async def get_crystal_ball_prediction(db: Session = Depends(get_db)):
-    """Generate predictive intelligence for the Crystal Ball."""
-    try:
-        from src.analysis.llm_analyzer import LLMAnalyzer
-        from src.database.models import VerifiedNews
-        
-        # Get recent headline context
-        latest = db.query(VerifiedNews).order_by(VerifiedNews.created_at.desc()).limit(20).all()
-        context_str = "\n".join([f"- {a.title}" for a in latest])
-        
-        analyzer = LLMAnalyzer()
-        # Create a specific prompt for the Crystal Ball
-        prediction_result = await analyzer.generate_geopolitical_prediction([a.title for a in latest])
-        return {"status": "success", "prediction": prediction_result}
-    except Exception as e:
-        logger.error(f"Prediction failed: {e}")
-        return {"status": "error", "message": "Neural node sync failed."}
-
-
-@router.delete("/api/articles/{id}")
-async def delete_article(id: int, db: Session = Depends(get_db)):
-    article = db.query(VerifiedNews).filter(VerifiedNews.id == id).first()
-    if not article:
-        raise HTTPException(status_code=404, detail="Article not found")
-    
-    db.delete(article)
-    db.commit()
-    log_protocol_action(db, "delete", "article", str(id), details=f"Deleted article: {article.title}")
-    return {"status": "success"}
-
-@router.get("/api/ads")
-async def get_ads(db: Session = Depends(get_db)):
-    ads = db.query(Advertisement).order_by(Advertisement.created_at.desc()).all()
-    return ads
-
-@router.post("/api/ads")
-async def create_ad(data: dict, db: Session = Depends(get_db)):
-    new_ad = Advertisement(
-        image_url=data.get("image_url"),
-        caption=data.get("caption"),
-        target_url=data.get("target_url"),
-        position=data.get("position", "both"),
-        target_platform=data.get("target_platform", "both")
-    )
-    db.add(new_ad)
-    db.commit()
-    log_protocol_action(db, "create", "ad", str(new_ad.id), details=f"Created ad: {new_ad.caption}")
-    return {"status": "success", "id": new_ad.id}
-
-@router.delete("/api/ads/{id}")
-async def delete_ad(id: int, db: Session = Depends(get_db)):
-    ad = db.query(Advertisement).filter(Advertisement.id == id).first()
-    if not ad:
-        raise HTTPException(status_code=404, detail="Ad not found")
-    db.delete(ad)
-    db.commit()
-    log_protocol_action(db, "delete", "ad", str(id), details=f"Deleted ad: {ad.caption}")
-    return {"status": "success"}
-
-@router.get("/api/newspapers")
-async def get_newspapers(db: Session = Depends(get_db)):
-    papers = db.query(Newspaper).order_by(Newspaper.name.asc()).all()
-    return papers
-
-@router.post("/api/newspapers")
-async def create_newspaper(data: dict, db: Session = Depends(get_db)):
-    new_paper = Newspaper(
-        name=data.get("name"),
-        url=data.get("url"),
-        logo_text=data.get("logo_text"),
-        logo_color=data.get("logo_color", "#000000"),
-        country=data.get("country", "Global")
-    )
-    db.add(new_paper)
-    db.commit()
-    log_protocol_action(db, "create", "source", str(new_paper.id), details=f"Created source: {new_paper.name}")
-    return {"status": "success", "id": new_paper.id}
-
-@router.delete("/api/newspapers/{id}")
-async def delete_newspaper(id: int, db: Session = Depends(get_db)):
-    paper = db.query(Newspaper).filter(Newspaper.id == id).first()
-    if not paper:
-        raise HTTPException(status_code=404, detail="Source not found")
-    db.delete(paper)
-    db.commit()
-    log_protocol_action(db, "delete", "source", str(id), details=f"Deleted source: {paper.name}")
-    return {"status": "success"}
-
-@router.get("/api/history")
-async def get_history(db: Session = Depends(get_db)):
-    history = db.query(ProtocolHistory).order_by(ProtocolHistory.timestamp.desc()).limit(200).all()
-    return history
 
 @router.get("/api/blueprints")
 async def get_blueprints():
@@ -2817,11 +2656,6 @@ async def get_blueprints():
 async def publish_blueprint(id: str):
     return {"status": "success", "message": "Blueprint published"}
 
-@router.post("/api/sync-intelligence")
-async def sync_intelligence(background_tasks: BackgroundTasks):
-    from src.scheduler.task_scheduler import run_news_cycle
-    background_tasks.add_task(run_news_cycle)
-    return {"status": "success", "message": "Intelligence synchronization started in background"}
 
 # --- HELPERS ---
 
@@ -2841,32 +2675,4 @@ def normalize_country(country_code: str):
     code = country_code.lower().strip()
     return mapping.get(code, (country_code.capitalize(), [code]))
 
-async def _do_translate(items: list, target_lang: str, node_title: str = ""):
-    """Translate a list of items using LLM or translator utility."""
-    try:
-        from src.analysis.llm_analyzer import LLMAnalyzer
-        analyzer = LLMAnalyzer()
-        
-        # Prepare batch translation prompt
-        input_data = json.dumps(items)
-        prompt = f"Translate the following list of news artifacts into {target_lang}. Preserve the JSON structure. Return ONLY the translated JSON.\n\nJSON:\n{input_data}"
-        
-        # Simple implementation using existing LLM helper
-        res_str = analyzer.get_completion(prompt)
-        # Clean JSON markdown if present
-        if "```json" in res_str:
-            res_str = res_str.split("```json")[1].split("```")[0].strip()
-        
-        translated_stories = json.loads(res_str)
-        
-        # If node_title is provided, translate it too
-        translated_node_title = node_title
-        if node_title:
-             prompt_node = f"Translate the following short phrase into {target_lang}: '{node_title}'. Return ONLY the translated string."
-             translated_node_title = analyzer.get_completion(prompt_node).strip()
-             
-        return {"translated_stories": translated_stories, "node_title": translated_node_title}
-    except Exception as e:
-        logger.error(f"Backend translation failed: {e}")
-        return {"translated_stories": [], "node_title": node_title}
 

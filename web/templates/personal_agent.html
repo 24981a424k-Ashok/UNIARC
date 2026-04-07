@@ -631,18 +631,64 @@
         <a href="/history" class="mobile-nav-link">📖 History</a>
     </div>
 
+    <!-- 10. FLOATING LIVE CRICKET WIDGET -->
+    <div id="live-cricket-widget" class="cricket-widget hidden">
+        <div class="cricket-header">
+            <span class="live-pulse"></span>
+            <span class="cricket-label">LIVE CRICKET</span>
+            <button class="close-cricket" onclick="document.getElementById('live-cricket-widget').remove()">&times;</button>
+        </div>
+        <div class="cricket-body">
+            <div id="cricket-match-name" class="match-name">Syncing...</div>
+            <div id="cricket-score" class="match-score">--</div>
+            <div id="cricket-status" class="match-status">Connecting to nodes...</div>
+        </div>
+    </div>
+
+    <style>
+        .cricket-widget { position: fixed; top: 150px; left: 20px; width: 280px; background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 20px; padding: 15px; z-index: 9999; box-shadow: 0 15px 50px rgba(0,0,0,0.8); transform: translateY(0); transition: opacity 0.5s ease; font-family: 'Inter', sans-serif; cursor: move; user-select: none; }
+        .cricket-widget.hidden { transform: translateY(150%) scale(0.8); opacity: 0; pointer-events: none; }
+        .cricket-header { display: flex; align-items: center; margin-bottom: 12px; gap: 8px; }
+        .live-pulse { width: 8px; height: 8px; background: #ef4444; border-radius: 50%; display: inline-block; box-shadow: 0 0 10px #ef4444; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .cricket-label { font-size: 0.7rem; font-weight: 800; letter-spacing: 1px; color: #ef4444; text-transform: uppercase; }
+        .close-cricket { margin-left: auto; background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+        .match-name { font-size: 0.9rem; font-weight: 700; color: white; margin-bottom: 4px; }
+        .match-score { font-size: 1.6rem; font-weight: 900; color: #fbce04; margin-bottom: 4px; letter-spacing: -1px; }
+        .match-status { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
+    </style>
+
     <script>
-        function toggleMobileMenu() {
-            const overlay = document.getElementById('mobile-nav-overlay');
-            const mask = document.getElementById('nav-mask');
-            overlay.classList.toggle('active');
-            mask.classList.toggle('active');
-            
-            if (overlay.classList.contains('active')) {
-                document.body.style.overflow = 'hidden';
-            } else {
-                document.body.style.overflow = '';
-            }
+        async function updateLiveCricket() {
+            try {
+                const response = await fetch('/api/cricket/live');
+                const data = await response.json();
+                const widget = document.getElementById('live-cricket-widget');
+                if (data.live) {
+                    document.getElementById('cricket-match-name').innerText = data.match.name;
+                    document.getElementById('cricket-score').innerText = data.match.short_score;
+                    document.getElementById('cricket-status').innerText = data.match.status;
+                    widget.classList.remove('hidden');
+                }
+            } catch (err) { console.error("Cricket fetch error:", err); }
+        }
+        setTimeout(() => { updateLiveCricket(); setInterval(updateLiveCricket, 300000); initDraggableWidget(); }, 3000);
+        function initDraggableWidget() {
+            const widget = document.getElementById('live-cricket-widget');
+            let isDragging = false, offset = { x: 0, y: 0 };
+            widget.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.close-cricket')) return;
+                isDragging = true;
+                offset = { x: widget.offsetLeft - e.clientX, y: widget.offsetTop - e.clientY };
+                widget.style.transition = 'none';
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                widget.style.left = (e.clientX + offset.x) + 'px';
+                widget.style.top = (e.clientY + offset.y) + 'px';
+                widget.style.bottom = 'auto'; widget.style.right = 'auto';
+            });
+            document.addEventListener('mouseup', () => { isDragging = false; widget.style.transition = 'opacity 0.5s ease'; });
         }
     </script>
 </body>

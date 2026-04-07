@@ -18,14 +18,10 @@ def fix_sequences():
     
     # List of tables with SERIAL primary keys
     tables = [
-        "verified_news", 
-        "raw_news", 
-        "daily_digests", 
-        "notifications", 
-        "subscriber_profiles",
-        "protocol_history",
-        "user_streak",
-        "active_campaign"
+        "verified_news", "raw_news", "daily_digests", "track_notifications", 
+        "users", "protocol_history", "topic_tracking", "otp_verifications",
+        "subscriptions", "folders", "saved_articles", "read_history",
+        "flagged_articles", "breaking_news", "advertisements", "newspapers"
     ]
     
     with engine.connect() as conn:

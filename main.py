@@ -11,15 +11,15 @@ import logging
 if os.getcwd() not in sys.path:
     sys.path.append(os.getcwd())
 
-import uvicorn
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import FileResponse
-from starlette.responses import JSONResponse
-from loguru import logger
 import sys
+from sqlalchemy import text # Moved from lifespan for stability
+from src.database.models import engine, init_db # Moved from lifespan for stability
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from contextlib import asynccontextmanager
+import uvicorn
+from loguru import logger
 
 # Silence noisy external libraries
 logging.getLogger("httpx").setLevel(logging.WARNING)
@@ -50,16 +50,14 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting AI News Intelligence Agent...")
 
-    # Environment Check (Checking through SecretManager which handles DB + Env)
-    from src.utils.secret_manager import SecretManager
-    
+    # Environment Check
     required_keys = ["OPENAI_API_KEY", "NEWS_API_KEY"]
-    missing_keys = [key for key in required_keys if not SecretManager.get(key)]
+    missing_keys = [key for key in required_keys if not os.getenv(key)]
     if missing_keys:
         logger.warning(f"⚠️  MISSING CRITICAL KEYS: {', '.join(missing_keys)}. Analysis and collection may fail or use mocks.")
     
-    if not SecretManager.get("FIREBASE_SERVICE_ACCOUNT_JSON") and not os.path.exists("service-account.json") and not SecretManager.get("FIREBASE_PRIVATE_KEY"):
-         logger.warning("⚠️  No Firebase credentials found (DB, ENV, or file). Database/App sync might fail.")
+    if not os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON") and not os.path.exists("service-account.json"):
+         logger.warning("⚠️  No Firebase credentials found (JSON env or file). Database/App sync might fail.")
     
     # Initialize DB
     init_db()
@@ -109,18 +107,25 @@ async def lifespan(app: FastAPI):
 
     # 4. Self-Healing: Sync DB Sequences (Fixes Duplicate Key Error)
     try:
-        from src.database.models import engine, text
         with engine.connect() as conn:
             logger.info("Synchronizing database sequences (Self-Healing)...")
-            tables = ["verified_news", "raw_news", "daily_digests", "notifications", "subscriber_profiles", "protocol_history"]
+            tables = [
+                "verified_news", "raw_news", "daily_digests", "track_notifications", 
+                "users", "protocol_history", "topic_tracking", "otp_verifications",
+                "subscriptions", "folders", "saved_articles", "read_history",
+                "flagged_articles", "breaking_news", "advertisements", "newspapers"
+            ]
             for table in tables:
                 try:
-                    conn.execute(text(f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT MAX(id) FROM {table}))"))
+                    # Use text() for safe SQL execution
+                    query = f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), (SELECT MAX(id) FROM {table}))"
+                    conn.execute(text(query))
                     conn.commit()
-                except: continue
+                except Exception:
+                    continue # Skip if table doesn't have sequence or id
             logger.info("✅ Database sequences synchronized.")
     except Exception as e:
-        logger.error(f"Sequence sync failed: {e}")
+        logger.error(f"Sequence sync failed (Initial run): {e}")
 
     import threading
     threading.Thread(target=_background_startup_tasks, daemon=True).start()
@@ -174,10 +179,10 @@ def main():
             logger.error(f"Unknown command: {command}")
     else:
         # Run Web Server
-        port = int(os.environ.get("PORT", 7860))
+        port = int(os.environ.get("PORT", 8000))
         logger.info(f"🚀 Launching server on port {port}...")
-        # IMPORTANT: Bind to 0.0.0.0 for Hugging Face Spaces compatibility
-        uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+        # IMPORTANT: Bind to 0.0.0.0 for compatibility and stability
+        uvicorn.run("main:app", host="127.0.0.1", port=port, reload=False)
 
 if __name__ == "__main__":
     main()

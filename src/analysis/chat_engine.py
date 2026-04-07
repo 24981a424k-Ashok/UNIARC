@@ -11,7 +11,11 @@ from loguru import logger
 
 class NewsChatEngine:
     def __init__(self):
-        self.api_key = OPENAI_API_KEY
+        from src.config import settings
+        self.api_keys = [OPENAI_API_KEY] + getattr(settings, 'TRANSLATION_KEYS', [])
+        self.api_keys = [k for k in self.api_keys if k]
+        self.api_key = self.api_keys[0] if self.api_keys else None
+        
         if self.api_key:
             self.client = openai.OpenAI(api_key=self.api_key)
         else:

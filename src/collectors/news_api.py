@@ -16,14 +16,14 @@ class NewsCollector:
         else:
             self.client = NewsApiClient(api_key=self.api_key)
 
-    def fetch_recent_news(self, query: str = None, domains: str = None, categories: str = None) -> int:
+    def fetch_recent_news(self, query: str = None, domains: str = None, categories: str = None) -> Dict[str, int]:
         """
         Fetch news from the last 24 hours and save to DB.
         Returns count of new articles saved.
         """
         if not self.client:
             logger.error("NewsAPI client not initialized.")
-            return 0
+            return {"new": 0, "duplicates": 0, "total": 0}
 
         # Time range: last 24 hours
         to_date = datetime.utcnow()
@@ -118,55 +118,58 @@ class NewsCollector:
         count = 0
         dupe_count = 0
         seen_urls = set()
-        
-        for article in articles:
-            session = SessionLocal()
-            try:
-                url = article.get('url')
-                if not url or url in seen_urls:
-                    continue
-                
-                # Check for duplicates
-                exists = session.query(RawNews).filter(RawNews.url == url).first()
-                if exists:
-                    dupe_count += 1
-                    seen_urls.add(url)
-                    continue
-                
-                # ... same saving logic
-                # (Skipping middle code for brevity in tool call, 
-                # but making sure the replacement is robust)
-                
-                # Parse date
-                pub_date = article.get('publishedAt')
-                pub_dt = datetime.utcnow()
-                if pub_date:
-                    try:
-                        pub_dt = datetime.strptime(pub_date, "%Y-%m-%dT%H:%M:%SZ")
-                    except ValueError: pass
+        session = SessionLocal()
+        try:
+            for article in articles:
+                try:
+                    url = article.get('url')
+                    if not url or url in seen_urls:
+                        continue
+                    
+                    # Check for duplicates
+                    exists = session.query(RawNews).filter(RawNews.url == url).first()
+                    if exists:
+                        dupe_count += 1
+                        seen_urls.add(url)
+                        continue
+                    
+                    # Parse date
+                    pub_date = article.get('publishedAt')
+                    pub_dt = datetime.utcnow()
+                    if pub_date:
+                        try:
+                            pub_dt = datetime.strptime(pub_date, "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError: pass
 
-                raw_news = RawNews(
-                    source_id=article.get('source', {}).get('id'),
-                    source_name=article.get('source', {}).get('name'),
-                    author=article.get('author'),
-                    title=article.get('title'),
-                    description=article.get('description'),
-                    url=url,
-                    url_to_image=article.get('urlToImage'),
-                    published_at=pub_dt,
-                    content=article.get('content'),
-                    country=article.get('target_country')
-                )
-                session.add(raw_news)
-                session.commit()
-                seen_urls.add(url)
-                count += 1
-            except Exception as e:
-                session.rollback()
-                if "UniqueViolation" not in str(e) and "Duplicate" not in str(e):
+                    raw_news = RawNews(
+                        source_id=article.get('source', {}).get('id'),
+                        source_name=article.get('source', {}).get('name'),
+                        author=article.get('author')[:255] if article.get('author') else None,
+                        title=article.get('title'),
+                        description=article.get('description'),
+                        url=url,
+                        url_to_image=article.get('urlToImage'),
+                        published_at=pub_dt,
+                        content=article.get('content'),
+                        country=article.get('target_country')
+                    )
+                    session.add(raw_news)
+                    seen_urls.add(url)
+                    count += 1
+                    
+                    if count % 20 == 0:
+                        session.commit() # Periodic commit
+                        
+                except Exception as e:
+                    session.rollback()
                     logger.warning(f"Error saving article {article.get('title')}: {e}")
-            finally:
-                session.close()
+            
+            session.commit()
+        except Exception as e:
+            logger.error(f"Batch save crash: {e}")
+            session.rollback()
+        finally:
+            session.close()
         
         stats = {"new": count, "duplicates": dupe_count, "total": len(articles)}
         if count > 0:
