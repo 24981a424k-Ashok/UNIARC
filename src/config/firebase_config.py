@@ -92,15 +92,20 @@ def verify_token(id_token: str):
 
         # Pass the explicit app instance to verify_id_token
         try:
-            # We don't have a direct 'leeway' param in Python SDK, so we handle skew with a fast retry
+            # We don't have a direct 'leeway' param in Python SDK, so we handle skew with a robust retry
             return auth.verify_id_token(id_token, app=_firebase_app)
         except Exception as e:
             # Handle clock skew (Token used too early)
+            # Typically a 1-2 second difference between client and server clocks.
             if "used too early" in str(e).lower():
+                logger.warning(f"Clock skew detected. Retrying in 2s...")
                 import time
-                logger.warning(f"Clock skew detected. Retrying in 100ms...")
-                time.sleep(0.1) # Much faster than 5s
-                return auth.verify_id_token(id_token, app=_firebase_app)
+                time.sleep(2.0) # 2s covers the typical 1s drift visible in logs
+                try:
+                    return auth.verify_id_token(id_token, app=_firebase_app)
+                except Exception as e2:
+                    logger.error(f"Second token retry failed: {e2}")
+                    return None
             raise e
     except Exception as e:
         logger.error(f"Token verification failed: {e}")
