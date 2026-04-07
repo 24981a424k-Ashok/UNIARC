@@ -160,52 +160,64 @@ async def run_news_cycle():
                                 break
                 news.category = cat
 
-            # Run specialized Sports analysis (Incremental Wave Pattern)
+            # Run specialized Sports analysis (Isolated waves)
             if sports_articles:
-                logger.info(f"Analyzing {len(sports_articles)} articles with Sports AI (Incremental Waves)...")
+                logger.info(f"Analyzing {len(sports_articles)} articles with Sports AI...")
                 wave_size = 5
                 for i in range(0, len(sports_articles), wave_size):
-                    wave = sports_articles[i:i + wave_size]
-                    sports_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=True)
-                    for (news, _), result in zip(wave, sports_results):
-                        apply_analysis_to_news(news, result)
-                        news.category = "Sports"
-                    db.commit() # Save this wave immediately!
-                    logger.info(f"Progress: Processed {min(i + wave_size, len(sports_articles))}/{len(sports_articles)} sports articles.")
+                    try:
+                        wave = sports_articles[i:i + wave_size]
+                        sports_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=True)
+                        for (news, _), result in zip(wave, sports_results):
+                            apply_analysis_to_news(news, result)
+                            news.category = "Sports"
+                        db.commit() # Save this wave immediately!
+                        logger.info(f"Progress: Processed {min(i + wave_size, len(sports_articles))}/{len(sports_articles)} sports articles.")
+                    except Exception as e:
+                        logger.error(f"Sports analysis wave failed: {e}")
+                        continue # Keep the cycle moving!
             
-            # Run standard analysis (Incremental Wave Pattern)
+            # Run standard analysis (Isolated waves)
             if other_articles:
-                logger.info(f"Analyzing {len(other_articles)} articles with Standard AI (Incremental Waves)...")
-                wave_size = 10 # Standard analysis can handle larger waves
+                logger.info(f"Analyzing {len(other_articles)} articles with Standard AI...")
+                wave_size = 10 
                 for i in range(0, len(other_articles), wave_size):
-                    wave = other_articles[i:i + wave_size]
-                    other_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=False)
-                    for (news, _), result in zip(wave, other_results):
-                        apply_analysis_to_news(news, result)
-                    db.commit() # Save this wave immediately!
-                    logger.info(f"Progress: Processed {min(i + wave_size, len(other_articles))}/{len(other_articles)} standard articles.")
+                    try:
+                        wave = other_articles[i:i + wave_size]
+                        other_results = await analyzer.analyze_batch([a[1] for a in wave], is_sports=False)
+                        for (news, _), result in zip(wave, other_results):
+                            apply_analysis_to_news(news, result)
+                        db.commit() # Save this wave immediately!
+                        logger.info(f"Progress: Processed {min(i + wave_size, len(other_articles))}/{len(other_articles)} standard articles.")
+                    except Exception as e:
+                        logger.error(f"Standard analysis wave failed: {e}")
+                        continue # Keep the cycle moving!
 
-            logger.info(f"Analyzed {len(unanalyzed)} articles incrementally (incl. {len(sports_articles)} sports).")
+            logger.info(f"Analyzed {len(unanalyzed)} articles incrementally.")
 
-        # 4. Generate Digest
-        logger.info("Step 4: Digest Generation")
-        generator = DigestGenerator()
-        digest = await generator.create_daily_digest(db)
+        # --- MANDATORY PHASE: Ensure the website updates even if AI failed ---
+        try:
+            # 4. Generate Digest (The core source of the "Entire Website")
+            logger.info("Step 4: Mandatory Website Update (Digest Generation)...")
+            generator = DigestGenerator()
+            digest = await generator.create_daily_digest(db)
 
-        # 5. Deliver
-        if digest:
-            if "brief" in digest:
-                NotificationManager.send_daily_brief(db, digest["brief"])
-            if "top_stories" in digest:
-                for story in digest["top_stories"][:2]:
-                    NotificationManager.notify_subscribers(db, story.get("category", "General"), story["title"], story["url"], story.get("id"))
-            
-            # 6. Check Topic Tracking
-            logger.info("Step 6: Topic Tracking Notifications")
-            await check_topic_tracking(db)
+            # 5. Deliver
+            if digest:
+                if "brief" in digest:
+                    NotificationManager.send_daily_brief(db, digest["brief"])
+                if "top_stories" in digest:
+                    for story in digest["top_stories"][:2]:
+                        NotificationManager.notify_subscribers(db, story.get("category", "General"), story["title"], story["url"], story.get("id"))
+                
+                # 6. Check Topic Tracking
+                logger.info("Step 6: Topic Tracking Notifications")
+                await check_topic_tracking(db)
+        except Exception as e:
+            logger.error(f"Website update (Digest/Delivery) failed: {e}")
 
     except Exception as e:
-        logger.error("Error in news cycle: {error}", error=str(e), exc_info=True)
+        logger.error(f"Fatal error in news cycle: {e}")
         # Re-read if it was just a transient DB error
         if "psycopg2" in str(e).lower() or "connection" in str(e).lower():
             import asyncio
