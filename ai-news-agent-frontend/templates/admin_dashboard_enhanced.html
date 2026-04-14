@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UNI INTEL | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --card-bg: rgba(15, 23, 42, 0.6);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-gold: #fbbf24;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --border-highlight: rgba(59, 130, 246, 0.3);
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-symbol {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.2rem;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .brand h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--border-highlight);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.1), transparent);
+            pointer-events: none;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: white;
+        }
+
+        .stat-trend {
+            font-size: 0.75rem;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--error); }
+
+        /* MAIN CONTENT LAYOUT */
+        .dashboard-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1100px) {
+            .dashboard-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .panel-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* PLAY STORE CONTROLS */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .config-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"], input[type="number"], select {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: white;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        }
+
+        /* TOGGLE SWITCH */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px; width: 18px;
+            left: 3px; bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent-blue); }
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* ACTION BUTTONS */
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.02);
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* HISTORY LIST */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .history-action {
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+            text-transform: capitalize;
+        }
+
+        .history-details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .history-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        /* ANIMATIONS */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .panel { animation: slideIn 0.5s ease-out forwards; }
+        .panel:nth-child(2) { animation-delay: 0.1s; }
+        .panel:nth-child(3) { animation-delay: 0.2s; }
+
+        /* TOAST */
+        #toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--accent-blue);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 700;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand">
+                <div class="logo-symbol">U</div>
+                <h1>UNI INTEL COMMAND CENTER</h1>
+            </div>
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                NEURAL ENGINE ACTIVE
+            </div>
+        </header>
+
+        <main>
+            <!-- STATS COUNTERS -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="stats-users">--</div>
+                    <div class="stat-trend trend-up">✦ Neural Growth</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Verified Intel</div>
+                    <div class="stat-value" id="stats-intel">--</div>
+                    <div class="stat-trend trend-up">✦ Source Coverage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Daily Digests</div>
+                    <div class="stat-value" id="stats-digests">--</div>
+                    <div class="stat-trend" style="color: var(--accent-gold);">✦ 15-Min Logic Cycles</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Active Today</div>
+                    <div class="stat-value" id="stats-active">--</div>
+                    <div class="stat-trend trend-up">✦ Engagement Peak</div>
+                </div>
+            </div>
+
+            <div class="dashboard-layout">
+                <div class="left-col">
+                    <!-- PLAY STORE CONFIG -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">
+                                <span style="font-size: 1.5rem">📱</span>
+                                Play Store Launch Control
+                            </div>
+                            <button class="btn btn-primary" onclick="savePlayStoreConfig()">Save Configuration</button>
+                        </div>
+                        <div class="config-grid">
+                            <div class="config-item">
+                                <label class="config-label">Current App Version</label>
+                                <input type="text" id="cfg-app-version" placeholder="e.g. 1.0.5">
+                            </div>
+                            <div class="config-item">
+                                <label class="config-label">Min Required Version</label>
+                                <input type="text" id="cfg-min-version" placeholder="e.g. 1.0.0">
+                            </div>
+                            <div class="config-item">
+                                <label class="config-label">Force Update</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label class="switch">
+                                        <input type="checkbox" id="cfg-force-update">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary)">Block old versions</span>
+                                </div>
+                            </div>
+                            <div class="config-item">
+                                <label class="config-label">Maintenance Mode</label>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <label class="switch">
+                                        <input type="checkbox" id="cfg-maint-mode">
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary)">Lock entire system</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                            <label class="config-label">Maintenance Notice (Push Notification Message)</label>
+                            <input type="text" id="cfg-maint-msg" style="width: 100%; margin-top: 10px;" placeholder="System is under neural synchronization. Back soon.">
+                        </div>
+                    </div>
+
+                    <!-- REFRESH CONTROL -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">
+                                <span style="font-size: 1.5rem">⚡</span>
+                                Neural Node Synchronization
+                            </div>
+                        </div>
+                        <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.9rem;">
+                            Force a manual cycle refresh to pull latest intelligence from all global endpoints immediately.
+                        </p>
+                        <div style="display: flex; gap: 1rem;">
+                            <button class="btn btn-secondary" onclick="triggerSync()" id="sync-btn">
+                                🔄 Trigger Global Refresh
+                            </button>
+                            <button class="btn btn-secondary" onclick="window.open('/dashboard', '_blank')">
+                                👁️ View Live Dashboard
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SYSTEM HISTORY -->
+                    <div class="panel">
+                        <div class="panel-header">
+                            <div class="panel-title">
+                                <span style="font-size: 1.5rem">📜</span>
+                                Protocol Audit logs
+                            </div>
+                        </div>
+                        <div class="history-list" id="history-container">
+                            <div style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading neural history...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <!-- SYSTEM STATUS -->
+                    <div class="panel" style="padding: 1.5rem">
+                        <div class="panel-title" style="margin-bottom: 2rem">System Vitals</div>
+                        <div style="display: flex; flex-direction: column; gap: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary)">DB Connectivity</span>
+                                <span style="color: var(--success); font-weight: 700; font-size: 0.85rem;">STABLE</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary)">LLM Nodes</span>
+                                <span style="color: var(--success); font-weight: 700; font-size: 0.85rem;">ACTIVE (3)</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary)">Geo-Endpoints</span>
+                                <span style="color: var(--accent-blue); font-weight: 700; font-size: 0.85rem;">EN, HI, TE...</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.85rem; color: var(--text-secondary)">Storage Engine</span>
+                                <span style="color: var(--text-primary); font-weight: 600; font-size: 0.85rem;">SQLite 3.x</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ADMIN ACCESS KEY (READONLY) -->
+                    <div class="panel" style="padding: 1.5rem">
+                        <div class="panel-title" style="margin-bottom: 1rem">Neural Access Token</div>
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                            Token required for Vercel/External Relay authentication.
+                        </p>
+                        <div style="background: rgba(0,0,0,0.5); padding: 12px; border-radius: 8px; font-family: monospace; font-size: 0.8rem; word-break: break-all; border: 1px solid var(--border); color: var(--accent-gold);">
+                            AUTHENTICATED_SESSION_ACTIVE
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast">Changes Applied Successfully</div>
+
+    <script>
+        const API_BASE = '/api/admin';
+        const AUTH_TOKEN = localStorage.getItem('admin_token');
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!AUTH_TOKEN) {
+                // If no token, maybe we aren't logged in. 
+                // In a real app we'd redirect, for now we assume they came from login.
+            }
+            refreshAll();
+            setInterval(refreshStats, 30000); // Auto refresh stats every 30s
+        });
+
+        async function fetchAdmin(endpoint, options = {}) {
+            const resp = await fetch(`${API_BASE}${endpoint}`, {
+                ...options,
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            });
+            if (resp.status === 403 || resp.status === 401) {
+                alert("Session Expired. Please log in again.");
+                return null;
+            }
+            return resp.json();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        async function refreshAll() {
+            await Promise.all([
+                refreshStats(),
+                refreshHistory(),
+                refreshConfig()
+            ]);
+        }
+
+        async function refreshStats() {
+            const data = await fetchAdmin('/stats');
+            if (!data) return;
+            
+            document.getElementById('stats-users').innerText = data.counts.users;
+            document.getElementById('stats-intel').innerText = data.counts.verified_articles;
+            document.getElementById('stats-digests').innerText = data.counts.digests;
+            document.getElementById('stats-active').innerText = data.engagement.active_today;
+        }
+
+        async function refreshHistory() {
+            const data = await fetchAdmin('/history');
+            if (!data) return;
+
+            const container = document.getElementById('history-container');
+            container.innerHTML = data.map(item => `
+                <div class="history-item">
+                    <div>
+                        <div class="history-action" style="color: ${getActionColor(item.action)}">${item.action.replace('_', ' ')}</div>
+                        <div class="history-details">${item.details || 'System sync operation'}</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 4px;">Admin: ${item.admin_user} • Target: ${item.target_type}</div>
+                    </div>
+                    <div class="history-time">${formatTime(item.timestamp)}</div>
+                </div>
+            `).join('');
+        }
+
+        async function refreshConfig() {
+            const data = await fetchAdmin('/config');
+            if (!data) return;
+
+            document.getElementById('cfg-app-version').value = data.app_version || '1.0.0';
+            document.getElementById('cfg-min-version').value = data.min_version || '1.0.0';
+            document.getElementById('cfg-force-update').checked = data.force_update === 'true';
+            document.getElementById('cfg-maint-mode').checked = data.maintenance_mode === 'true';
+            document.getElementById('cfg-maint-msg').value = data.maintenance_message || '';
+        }
+
+        async function savePlayStoreConfig() {
+            const payload = {
+                app_version: document.getElementById('cfg-app-version').value,
+                min_version: document.getElementById('cfg-min-version').value,
+                force_update: document.getElementById('cfg-force-update').checked ? 'true' : 'false',
+                maintenance_mode: document.getElementById('cfg-maint-mode').checked ? 'true' : 'false',
+                maintenance_message: document.getElementById('cfg-maint-msg').value
+            };
+
+            const res = await fetchAdmin('/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res && res.status === 'updated') {
+                showToast("Play Store Config Synced");
+                refreshHistory();
+            }
+        }
+
+        async function triggerSync() {
+            const btn = document.getElementById('sync-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⚡ Syncing Neural Nodes...';
+
+            const res = await fetchAdmin('/refresh-digest', { method: 'POST' });
+            if (res && res.status === 'sync_initiated') {
+                showToast("Neural Node Sync Initiated");
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    refreshAll();
+                }, 2000);
+            }
+        }
+
+        function getActionColor(action) {
+            if (action.includes('auth')) return 'var(--accent-blue)';
+            if (action.includes('sync')) return 'var(--accent-purple)';
+            if (action.includes('config')) return 'var(--accent-gold)';
+            if (action.includes('purge') || action.includes('delete')) return 'var(--error)';
+            return 'var(--text-primary)';
+        }
+
+        function formatTime(ts) {
+            if (!ts) return '';
+            const date = new Date(ts);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>

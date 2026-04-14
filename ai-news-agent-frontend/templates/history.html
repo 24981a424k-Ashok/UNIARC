@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence History - Universal News Intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=3.2">
+    <style>
+        .history-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .history-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .history-info a {
+            text-decoration: none;
+        }
+
+        .history-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            opacity: 0.6;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="global-info-bar">
+        <div class="info-left">UNI v3.0 // ANALYTICS MODULE</div>
+        <div class="info-right">
+            <div class="info-item"><span>●</span> SYSTEM TRACKING ACTIVE</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" style="margin-top: 60px; max-width: 1000px; margin-left: auto; margin-right: auto; padding: 2rem;">
+        <div class="section-header" style="display: flex; align-items: center; margin-bottom: 2rem;">
+            <h2 class="section-title" style="margin: 0;">
+                <a href="/dashboard"
+                    style="font-size: 1rem; margin-right: 1rem; display:inline-flex; align-items:center; color: var(--accent-blue); text-decoration: none;">
+                    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                🕒 Intelligence Usage History
+            </h2>
+        </div>
+
+        <div id="history-list">
+            <div class="empty-state">Retrieving your intelligence trail...</div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                fetchHistory(user.uid);
+            } else {
+                window.location.href = '/login?redirect=history';
+            }
+        });
+
+        async function fetchHistory(uid) {
+            try {
+                const response = await fetch(`/api/user/read-history?uid=${uid}`);
+                const data = await response.json();
+                renderHistory(data.history || []);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('history-list').innerHTML = '<div class="empty-state">Error accessing history terminal.</div>';
+            }
+        }
+
+        function renderHistory(items) {
+            const list = document.getElementById('history-list');
+            if (!items || items.length === 0) {
+                list.innerHTML = '<div class="empty-state">No intelligence interactions recorded. Start exploring your feed!</div>';
+                return;
+            }
+
+            list.innerHTML = items.map(item => `
+                <div class="history-item">
+                    <div class="history-info">
+                        <a href="${item.url || '#'}" target="_blank"><h3>${item.title}</h3></a>
+                        <div class="history-meta">
+                            <span>Source: ${item.source_name || 'Global Intel'}</span> • 
+                            <span>Accessed on ${new Date(item.created_at || Date.now()).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.7rem; color: var(--accent-blue); font-weight: 700;">READ</div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+
+</html>

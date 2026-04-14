@@ -1,0 +1,108 @@
+<!-- Improved Image Logic with Random Gradient Fallback -->
+{% set bg_image = story.image_url %}
+{% if bg_image %}
+<div class="intel-card-image" style="background-image: url('{{ bg_image }}');" data-bg="{{ bg_image }}">
+    {% else %}
+    <div class="intel-card-image" style="background: linear-gradient(135deg, #1e293b, #0f172a);" data-bg="">
+        {% endif %}
+
+        {% set clean_title = (story.title or "") | replace("'", "") | replace('"', "") |
+        replace("\\", "") %}
+        {% set clean_category = (selected_category or "top_stories") | replace("'", "") |
+        replace('"', "") %}
+        <!-- Fallback Script for this specific card -->
+        <!-- Unified Error Handler for consistent fallback variety -->
+        <img src="{{ bg_image or '#' }}" style="display:none;" data-cat="{{ clean_category }}"
+            data-seed="{{ clean_title }}" data-index="{{ global_index }}"
+            onerror="handleImageError(this, this.dataset.cat, this.dataset.seed, this.dataset.index)">
+
+        <button class=" save-btn" onclick="saveArticle(event, '{{ story.id }}')">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="intel-header">
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
+            <span style="color:var(--accent-blue); font-size:0.8rem; font-weight:700;">
+                {% if story.is_global_fallback %}
+                <span style="color:var(--accent-gold);">{{ ui.global or '[GLOBAL]' }}</span> {{ story.source_name }}
+                {% else %}
+                {{ ui.verified or 'VERIFIED:' }} {{ story.source_name }}
+                {% endif %}
+            </span>
+            <span style="color:var(--text-secondary); font-size:0.8rem;">{{ story.bias }}</span>
+        </div>
+        <h3 class="intel-title">{{ story.title }}</h3>
+
+        <!-- Tags as top buttons -->
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1rem;">
+            {% for tag in story.tags[:3] %}
+            <span
+                style="background:rgba(128,128,128,0.2); color:var(--text-primary); padding:4px 10px; border-radius:4px; font-size:0.7rem; font-weight:700; text-transform:uppercase;">{{
+                tag }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Bullets / Summary -->
+    <div class="intel-section">
+        <ul>
+            {% for bullet in story.bullets[:3] %}
+            <li>{{ bullet }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Who is Affected -->
+    <div class="intel-section" style="background:rgba(59, 130, 246, 0.05); border-left:3px solid var(--accent-blue);">
+        <h4 style="color:var(--accent-blue);">{{ ui.who_affected }}</h4>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">{{ story.affected }}</p>
+    </div>
+
+    <!-- Why It Matters -->
+    <div class="intel-section" style="background:rgba(251, 188, 4, 0.05); border-left:3px solid var(--accent-gold);">
+        <h4 style="color:var(--accent-gold);">{{ ui.why_matters }}</h4>
+        <p style="font-size:0.9rem; color:var(--text-secondary);">{{ story.why }}</p>
+    </div>
+
+    <div class="intel-footer" style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; gap:0.75rem; align-items:center;">
+            <span style="font-size:0.8rem; color:var(--text-secondary);">{{ ui.ai_analysis }} • {{ story.time_ago or ui.just_now }}</span>
+            <div style="display:flex; gap:0.5rem;">
+                <button class="card-action-btn share-btn" onclick="shareArticle(event, '{{ story.id }}', '{{ story.title | urlencode }}', '{{ story.url }}')" title="{{ ui.share_intel or 'Share Intelligence' }}">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-12-4l4-4 4 4m-4-4v12" />
+                    </svg>
+                </button>
+                <button class="card-action-btn track-btn" onclick="trackTopic(event, '{{ story.id }}', '{{ story.title | urlencode }}')" title="{{ ui.track_intel or 'Track Intelligence' }}" style="background:rgba(251, 188, 4, 0.1); border-color:var(--accent-gold);">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <circle cx="12" cy="12" r="6" />
+                        <circle cx="12" cy="12" r="2" />
+                    </svg>
+                </button>
+                <button class="card-action-btn update-btn" onclick="requestUpdate(event, '{{ story.id }}')" title="{{ ui.force_update or 'Force AI Update' }}">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+                <button class="card-action-btn tts-toggle-btn" 
+                        onclick="playIntelligence(event)"
+                        data-id="{{ story.id }}"
+                        data-title="{{ story.title }}"
+                        data-bullets="{{ story.bullets | join('. ') }}"
+                        data-affected="{{ story.affected }}"
+                        data-why="{{ story.why }}"
+                        data-lang="{{ selected_language | capitalize }}"
+                        title="{{ ui.listen_audi or 'Listen' }}" 
+                        style="background:rgba(59, 130, 246, 0.1); border-color:var(--accent-blue); color:var(--accent-blue); font-size:0.7rem; font-weight:800; display:flex; align-items:center; gap:4px; padding:0 10px;">
+                    🔊 {{ ui.listen_audi or 'Listen' }}
+                </button>
+            </div>
+        </div>
+        <button class="card-chat-btn" onclick="openChatFromCard(event, '{{ story.id }}')" title="{{ ui.quick_chat or 'Quick Chat' }}">
+            💬
+        </button>
+    </div>

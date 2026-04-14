@@ -1,0 +1,304 @@
+.breaking-news-section {
+    margin-bottom: 4rem;
+    background: linear-gradient(135deg, rgba(20, 25, 34, 0.8) 0%, rgba(10, 10, 10, 0.9) 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    border: 1px solid var(--border-highlight);
+    box-shadow: 0 0 20px rgba(234, 67, 53, 0.1);
+    /* Subtle red glow */
+    backdrop-filter: blur(10px);
+}
+
+.breaking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.breaking-title {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.breaking-live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: white;
+}
+
+.live-dot {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.breaking-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+}
+
+.breaking-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.breaking-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+}
+
+.breaking-classification {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: #dc2626;
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.breaking-classification.developing {
+    background: #f59e0b;
+}
+
+.breaking-headline {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+.breaking-what-happened {
+    margin-bottom: 1rem;
+}
+
+.breaking-what-happened h4 {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.breaking-what-happened ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.breaking-what-happened li {
+    font-size: 0.9rem;
+    color: #334155;
+    margin-bottom: 0.4rem;
+    padding-left: 1.2rem;
+    position: relative;
+}
+
+.breaking-what-happened li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: #dc2626;
+    font-weight: bold;
+}
+
+.breaking-why-matters {
+    background: #fef3c7;
+    padding: 0.8rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #78350f;
+    border-left: 3px solid #f59e0b;
+}
+
+.breaking-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.breaking-confidence {
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+.breaking-time {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* ===== SEE MORE BUTTON STYLES ===== */
+.see-more-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 300px;
+    margin: 2rem auto 0;
+    padding: 0.9rem 1.5rem;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.see-more-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.see-more-btn svg {
+    transition: transform 0.3s ease;
+}
+
+.see-more-btn:hover svg {
+    transform: translateY(2px);
+}
+
+.hidden-item {
+    display: none !important;
+}
+
+/* ===== THEME TOGGLE BUTTON ===== */
+.theme-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    transition: all 0.3s ease;
+    z-index: 9999;
+    color: white;
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.6);
+}
+
+/* ===== LIGHT MODE STYLES ===== */
+[data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8fafc;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --card-bg: #ffffff;
+    --card-hover: #f8fafc;
+}
+
+[data-theme="light"] body {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .card:hover {
+    background: var(--card-hover);
+}
+
+[data-theme="light"] header {
+    background: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="light"] .tweet-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="light"] .trending-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+    .breaking-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .theme-toggle-btn {
+        top: 10px;
+        right: 10px;
+        width: 45px;
+        height: 45px;
+    }
+
+    .see-more-btn {
+        max-width: 100%;
+    }
+}
+
+/* ===== SECTION ID STYLES ===== */
+#breaking-news,
+#top-headlines,
+#trending-india,
+#twitter-intelligence {
+    position: relative;
+}
+
+/* Smooth transitions for expand/collapse */
+.cards-grid,
+.breaking-grid,
+.trending-grid,
+.twitter-horizontal-scroll {
+    transition: max-height 0.5s ease;
+}

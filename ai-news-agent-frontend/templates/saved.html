@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Items - Universal News Intelligence</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@300;400;600;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=3.2">
+    <style>
+        .saved-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .saved-item:hover {
+            border-color: var(--accent-gold);
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.03);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .saved-info h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+        }
+
+        .saved-info a {
+            text-decoration: none;
+        }
+
+        .saved-meta {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            opacity: 0.6;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="global-info-bar">
+        <div class="info-left">UNI v3.0 // SYSTEM ONLINE</div>
+        <div class="info-right">
+            <div class="info-item"><span>●</span> LIVE CONNECTED</div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" style="margin-top: 60px;">
+        <div class="section-header">
+            <h2 class="section-title">
+                <a href="/dashboard"
+                    style="font-size: 1rem; margin-right: 1rem; display:inline-flex; align-items:center; color: var(--accent-blue);">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7" />
+                    </svg>
+                </a>
+                ⭐ Saved for Later
+            </h2>
+            <!-- Retain hidden user-display for script compatibility -->
+            <div style="display:none;" id="user-display"></div>
+            <img style="display:none;" id="user-avatar-img">
+            <button id="clear-saved" class="clear-history-btn" style="margin-left: auto;">Clear All</button>
+        </div>
+
+        <div id="saved-list">
+            <div class="empty-state">Loading your saved items...</div>
+        </div>
+    </main>
+
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        auth.onAuthStateChanged(async user => {
+            if (user) {
+                const displayName = user.displayName || user.email || "User";
+                document.getElementById('user-display').innerText = displayName.split('@')[0];
+                if (user.photoURL) document.getElementById('user-avatar-img').src = user.photoURL;
+
+                fetchSavedItems(user.uid);
+            } else {
+                window.location.href = '/';
+            }
+        });
+
+        // Dropdown toggle
+        const menuToggle = document.getElementById('profile-menu-toggle');
+        const dropdown = document.getElementById('profile-dropdown');
+        const logoutBtn = document.getElementById('logout-btn');
+        const dashboardBtn = document.getElementById('dashboard-btn');
+
+        menuToggle.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('show');
+        };
+        window.onclick = () => dropdown.classList.remove('show');
+
+        logoutBtn.onclick = () => {
+            auth.signOut().then(() => {
+                window.location.href = '/';
+            });
+        };
+
+        dashboardBtn.onclick = () => {
+            window.location.href = '/dashboard';
+        };
+
+        async function fetchSavedItems(uid) {
+            try {
+                const response = await fetch(`/api/retention/saved-articles?uid=${uid}`);
+                const data = await response.json();
+                renderSavedItems(data.articles || []);
+            } catch (e) {
+                console.error(e);
+                document.getElementById('saved-list').innerHTML = '<div class="empty-state">Error loading items from terminal.</div>';
+            }
+        }
+
+        function renderSavedItems(items) {
+            const list = document.getElementById('saved-list');
+            if (items.length === 0) {
+                list.innerHTML = '<div class="empty-state">No saved items yet. Start exploring!</div>';
+                return;
+            }
+
+            list.innerHTML = items.map(item => `
+                <div class="saved-item">
+                    <div class="saved-info">
+                        <a href="${item.url || '#'}" target="_blank"><h3>${item.title}</h3></a>
+                        <div class="saved-meta">
+                            <span>Source: ${item.source_name || 'Global Intel'}</span> • 
+                            <span>Saved on ${new Date(item.saved_at || Date.now()).toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('clear-saved').onclick = async () => {
+            if (!confirm("Are you sure you want to clear all saved items?")) return;
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+
+            try {
+                const idToken = await user.getIdToken();
+                await fetch(`/api/retention/saved/${user.uid}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+                renderSavedItems([]);
+                alert("Saved items cleared.");
+            } catch (e) {
+                console.error(e);
+                alert("Failed to clear saved items.");
+            }
+        };
+    </script>
+</body>
+
+</html>
